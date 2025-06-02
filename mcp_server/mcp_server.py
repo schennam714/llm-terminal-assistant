@@ -3,7 +3,7 @@ import platform
 import subprocess
 import logging
 import psutil
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
 
@@ -20,56 +20,160 @@ logger = logging.getLogger(__name__)
 # Create an MCP server using FastMCP
 mcp = FastMCP("CrossPlatformTerminal")
 
+class CommandClassifier:
+    """Classifies commands by risk level for appropriate handling"""
+    
+    def __init__(self):
+        self.os_type = platform.system().lower()
+        
+        # Commands that require user confirmation
+        self.dangerous_commands = {
+            'destructive': [
+                'rm', 'del', 'rmdir', 'rd', 'format', 'mkfs', 'fdisk',
+                'diskpart', 'dd', 'shred', 'wipe'
+            ],
+            'system_modification': [
+                'sudo', 'su', 'chmod', 'chown', 'chgrp', 'mount', 'umount',
+                'systemctl', 'service', 'reboot', 'shutdown', 'halt', 'poweroff'
+            ],
+            'registry_modification': [
+                'reg', 'regedit', 'regedt32'
+            ],
+            'network_security': [
+                'iptables', 'ufw', 'firewall-cmd', 'netsh'
+            ]
+        }
+        
+        # Commands that are completely blocked (extremely dangerous)
+        self.forbidden_commands = [
+            'rm -rf /', 'rm -rf /*', 'del /s /q c:\\',
+            'format c:', 'dd if=/dev/zero', ':(){ :|:& };:'  # fork bomb
+        ]
+        
+        # Commands that are always safe
+        self.safe_commands = [
+            'ls', 'dir', 'pwd', 'whoami', 'date', 'echo', 'cat', 'type',
+            'grep', 'find', 'where', 'ps', 'tasklist', 'df', 'free', 
+            'uname', 'systeminfo', 'head', 'tail', 'wc', 'sort', 'uniq',
+            'which', 'whereis', 'history', 'env', 'printenv', 'id',
+            'uptime', 'w', 'who', 'last', 'finger', 'ping', 'traceroute',
+            'nslookup', 'dig', 'curl', 'wget', 'git', 'python', 'node',
+            'npm', 'pip', 'docker ps', 'docker images', 'kubectl get'
+        ]
+    
+    def classify_command(self, command: str) -> Tuple[str, str, List[str]]:
+        """
+        Classify a command by risk level
+        
+        Returns:
+            (risk_level, reason, suggested_flags)
+            risk_level: 'safe', 'requires_confirmation', 'forbidden'
+            reason: explanation of the classification
+            suggested_flags: safer alternatives or required flags
+        """
+        if not command or not command.strip():
+            return 'forbidden', 'Empty command', []
+        
+        command_lower = command.lower().strip()
+        base_command = command_lower.split()[0]
+        
+        # Check for completely forbidden patterns
+        for forbidden in self.forbidden_commands:
+            if forbidden in command_lower:
+                return 'forbidden', f'Extremely dangerous pattern detected: {forbidden}', []
+        
+        # Check if it's a known safe command
+        for safe in self.safe_commands:
+            if command_lower.startswith(safe.lower()):
+                return 'safe', 'Command is in safe list', []
+        
+        # Check for dangerous command categories
+        for category, commands in self.dangerous_commands.items():
+            for dangerous_cmd in commands:
+                if base_command == dangerous_cmd.lower():
+                    suggestions = self._get_safety_suggestions(base_command, command)
+                    return 'requires_confirmation', f'Potentially dangerous ({category})', suggestions
+        
+        # Check for dangerous flags/patterns
+        dangerous_patterns = [
+            '-rf', '/s /q', '--force', '--no-preserve-root',
+            '> /dev/', '2>/dev/null', '&& rm', '; rm'
+        ]
+        
+        for pattern in dangerous_patterns:
+            if pattern in command_lower:
+                return 'requires_confirmation', f'Contains dangerous pattern: {pattern}', []
+        
+        # Default: allow but log
+        return 'safe', 'Command appears safe', []
+    
+    def _get_safety_suggestions(self, base_command: str, full_command: str) -> List[str]:
+        """Get safety suggestions for dangerous commands"""
+        suggestions = []
+        
+        if base_command == 'rm':
+            suggestions = [
+                'Consider using "rm -i" for interactive deletion',
+                'Use "ls" first to verify what will be deleted',
+                'Consider moving to trash instead of permanent deletion'
+            ]
+        elif base_command == 'chmod':
+            suggestions = [
+                'Verify file permissions with "ls -la" first',
+                'Consider using specific permissions instead of 777'
+            ]
+        elif base_command == 'sudo':
+            suggestions = [
+                'Verify the command you\'re running with elevated privileges',
+                'Consider if the operation really needs root access'
+            ]
+        
+        return suggestions
+
 class PlatformAdapter:
     """Handles cross-platform command execution"""
     
     def __init__(self):
         self.os_type = platform.system().lower()
-        self.allowed_commands = self._get_allowed_commands()
-        self.dangerous_commands = self._get_dangerous_commands()
+        self.classifier = CommandClassifier()
         
-    def _get_allowed_commands(self) -> List[str]:
-        """Get allowed commands from environment or defaults"""
-        default_commands = [
-            'ls', 'dir', 'pwd', 'whoami', 'date', 'echo', 'cat', 'type',
-            'grep', 'find', 'where', 'ps', 'tasklist', 'df', 'free', 
-            'uname', 'systeminfo', 'head', 'tail', 'wc', 'sort', 'uniq'
-        ]
-        env_commands = os.getenv('ALLOWED_COMMANDS', '')
-        if env_commands:
-            return env_commands.split(',')
-        return default_commands
-    
-    def _get_dangerous_commands(self) -> List[str]:
-        """Get dangerous commands that should be blocked"""
-        default_dangerous = [
-            'rm', 'del', 'sudo', 'chmod', 'chown', 'dd', 'mkfs', 'fdisk',
-            'mount', 'umount', 'format', 'diskpart', 'reg', 'regedit'
-        ]
-        env_dangerous = os.getenv('DANGEROUS_COMMANDS', '')
-        if env_dangerous:
-            return env_dangerous.split(',')
-        return default_dangerous
-    
-    def validate_command(self, command: str) -> tuple[bool, str]:
-        """Validate if command is safe to execute"""
+    def validate_command(self, command: str) -> Tuple[bool, str, dict]:
+        """
+        Validate command and return detailed information
+        
+        Returns:
+            (is_executable, message, metadata)
+            metadata includes: risk_level, suggestions, adapted_command
+        """
         if not command or not command.strip():
-            return False, "Empty command"
+            return False, "Empty command", {}
         
         # Check command length
         max_length = int(os.getenv('MAX_COMMAND_LENGTH', '1000'))
         if len(command) > max_length:
-            return False, f"Command too long (max {max_length} characters)"
+            return False, f"Command too long (max {max_length} characters)", {}
         
-        # Extract the base command (first word)
-        base_command = command.strip().split()[0].lower()
+        # Classify the command
+        risk_level, reason, suggestions = self.classifier.classify_command(command)
         
-        # Check if command is dangerous
-        if any(dangerous in command.lower() for dangerous in self.dangerous_commands):
-            return False, f"Command contains dangerous operations: {base_command}"
+        # Adapt command for platform
+        adapted_command = self.adapt_command(command)
         
-        logger.info(f"Executing command: {command}")
-        return True, "Command validated"
+        metadata = {
+            'risk_level': risk_level,
+            'reason': reason,
+            'suggestions': suggestions,
+            'adapted_command': adapted_command,
+            'original_command': command
+        }
+        
+        if risk_level == 'forbidden':
+            return False, f"Command blocked: {reason}", metadata
+        
+        # Both safe and requires_confirmation are executable
+        # The confirmation will be handled by the CLI layer
+        logger.info(f"Command validated: {command} (risk: {risk_level})")
+        return True, f"Command validated ({risk_level})", metadata
     
     def adapt_command(self, command: str) -> str:
         """Adapt command for the current platform"""
@@ -80,25 +184,39 @@ class PlatformAdapter:
                 'cat': 'type',
                 'grep': 'findstr',
                 'ps': 'tasklist',
-                'which': 'where'
+                'which': 'where',
+                'cp': 'copy',
+                'mv': 'move'
             }
             
-            base_cmd = command.split()[0]
-            if base_cmd in adaptations:
-                return command.replace(base_cmd, adaptations[base_cmd], 1)
+            words = command.split()
+            if words and words[0] in adaptations:
+                words[0] = adaptations[words[0]]
+                return ' '.join(words)
         
         return command
     
-    def execute_command(self, command: str) -> tuple[bool, str, str]:
-        """Execute command and return success, stdout, stderr"""
+    def execute_command(self, command: str, force_execute: bool = False) -> Tuple[bool, str, str, dict]:
+        """
+        Execute command and return success, stdout, stderr, metadata
+        
+        Args:
+            command: Command to execute
+            force_execute: If True, skip confirmation requirements (for CLI layer)
+        """
         try:
             # Validate command first
-            is_valid, validation_msg = self.validate_command(command)
+            is_valid, validation_msg, metadata = self.validate_command(command)
             if not is_valid:
-                return False, "", validation_msg
+                return False, "", validation_msg, metadata
             
-            # Adapt command for platform
-            adapted_command = self.adapt_command(command)
+            # If command requires confirmation and force_execute is False,
+            # return special status for CLI to handle
+            if metadata['risk_level'] == 'requires_confirmation' and not force_execute:
+                return False, "", "REQUIRES_CONFIRMATION", metadata
+            
+            # Use adapted command
+            adapted_command = metadata['adapted_command']
             
             # Set up execution parameters based on OS
             if self.os_type == 'windows':
@@ -128,44 +246,96 @@ class PlatformAdapter:
             # Log the execution
             logger.info(f"Command executed: {adapted_command}, Success: {success}")
             
-            return success, stdout, stderr
+            return success, stdout, stderr, metadata
             
         except subprocess.TimeoutExpired:
             error_msg = f"Command timed out after {timeout} seconds"
             logger.error(error_msg)
-            return False, "", error_msg
+            return False, "", error_msg, metadata
             
         except Exception as e:
             error_msg = f"Error executing command: {str(e)}"
             logger.error(error_msg)
-            return False, "", error_msg
+            return False, "", error_msg, metadata
 
 # Initialize platform adapter
 platform_adapter = PlatformAdapter()
 
 @mcp.tool()
-def execute_terminal_command(command: str) -> str:
+def execute_terminal_command(command: str, force_execute: bool = False) -> str:
     """
-    Execute a terminal command safely across different platforms.
+    Execute a terminal command with intelligent risk assessment.
     
     Args:
         command: The terminal command to execute
+        force_execute: Skip confirmation for dangerous commands (used by CLI)
         
     Returns:
-        The command output or error message
+        The command output, error message, or confirmation request
     """
     logger.info(f"Received command execution request: {command}")
     
-    success, stdout, stderr = platform_adapter.execute_command(command)
+    success, stdout, stderr, metadata = platform_adapter.execute_command(command, force_execute)
+    
+    if stderr == "REQUIRES_CONFIRMATION":
+        # Format confirmation request for CLI
+        result = f"⚠️  DANGEROUS COMMAND DETECTED\n"
+        result += f"Command: {command}\n"
+        result += f"Risk: {metadata['reason']}\n"
+        if metadata['suggestions']:
+            result += f"Suggestions:\n"
+            for suggestion in metadata['suggestions']:
+                result += f"  • {suggestion}\n"
+        result += f"\nThis command requires confirmation to execute."
+        return result
     
     if success:
+        result = f"✅ Command executed successfully"
+        if metadata['risk_level'] == 'requires_confirmation':
+            result += " (with confirmation)"
         if stdout:
-            return f"✅ Command executed successfully:\n{stdout}"
+            result += f":\n{stdout}"
         else:
-            return "✅ Command executed successfully (no output)"
+            result += " (no output)"
+        return result
     else:
         error_output = stderr if stderr else "Unknown error occurred"
         return f"❌ Command failed:\n{error_output}"
+
+@mcp.tool()
+def analyze_command_safety(command: str) -> str:
+    """
+    Analyze a command's safety without executing it.
+    
+    Args:
+        command: The command to analyze
+        
+    Returns:
+        Safety analysis and recommendations
+    """
+    risk_level, reason, suggestions = platform_adapter.classifier.classify_command(command)
+    adapted = platform_adapter.adapt_command(command)
+    
+    result = f"🔍 Command Safety Analysis:\n"
+    result += f"Original: {command}\n"
+    if adapted != command:
+        result += f"Adapted: {adapted}\n"
+    result += f"Risk Level: {risk_level.upper()}\n"
+    result += f"Reason: {reason}\n"
+    
+    if suggestions:
+        result += f"\n💡 Safety Suggestions:\n"
+        for suggestion in suggestions:
+            result += f"  • {suggestion}\n"
+    
+    if risk_level == 'safe':
+        result += f"\n✅ This command is safe to execute."
+    elif risk_level == 'requires_confirmation':
+        result += f"\n⚠️  This command will require user confirmation."
+    else:
+        result += f"\n❌ This command is blocked for safety."
+    
+    return result
 
 @mcp.tool()
 def get_system_info() -> str:
@@ -223,8 +393,8 @@ def list_allowed_commands() -> str:
     Returns:
         Security configuration including allowed and blocked commands
     """
-    allowed = platform_adapter.allowed_commands
-    dangerous = platform_adapter.dangerous_commands
+    allowed = platform_adapter.classifier.safe_commands
+    dangerous = platform_adapter.classifier.dangerous_commands
     
     result = "📋 Command Security Status:\n\n"
     result += "✅ Allowed Commands:\n"
@@ -257,8 +427,8 @@ def get_system_status() -> str:
 
 if __name__ == "__main__":
     logger.info(f"Starting MCP server on {platform_adapter.os_type} platform")
-    logger.info(f"Allowed commands: {len(platform_adapter.allowed_commands)}")
-    logger.info(f"Blocked commands: {len(platform_adapter.dangerous_commands)}")
+    logger.info(f"Allowed commands: {len(platform_adapter.classifier.safe_commands)}")
+    logger.info(f"Blocked commands: {len(platform_adapter.classifier.dangerous_commands)}")
     
     # Run the MCP server using the official FastMCP
     mcp.run() 
