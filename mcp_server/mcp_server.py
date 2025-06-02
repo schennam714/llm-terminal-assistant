@@ -346,9 +346,10 @@ def get_system_info() -> str:
         Detailed system information including OS, hardware, and current state
     """
     try:
-        # Get CPU information
+        # Get CPU information (non-blocking)
         cpu_count = psutil.cpu_count()
-        cpu_percent = psutil.cpu_percent(interval=1)
+        # Remove the blocking interval=1 call
+        cpu_percent = psutil.cpu_percent()  # This returns immediately with cached value
         
         # Get memory information
         memory = psutil.virtual_memory()
@@ -411,7 +412,8 @@ def list_allowed_commands() -> str:
 def get_system_status() -> str:
     """Get real-time system status"""
     try:
-        cpu_percent = psutil.cpu_percent(interval=0.1)
+        # Remove blocking call here too
+        cpu_percent = psutil.cpu_percent()  # Non-blocking
         memory = psutil.virtual_memory()
         
         status = f"""🔄 System Status:
@@ -419,7 +421,7 @@ def get_system_status() -> str:
   Memory Usage: {memory.percent}%
   Available Memory: {round(memory.available / (1024**3), 2)} GB
   Active Processes: {len(psutil.pids())}
-  Current Time: {psutil.boot_time()}"""
+  Boot Time: {psutil.boot_time()}"""
         
         return status
     except Exception as e:
