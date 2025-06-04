@@ -20,6 +20,9 @@ from rich.markdown import Markdown
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 
+# Import our MCP client
+from cli.mcp_client import get_mcp_client
+
 app = typer.Typer(
     name="llm-terminal",
     help="🤖 LLM-Powered Terminal Assistant with Smart Command Execution",
@@ -29,12 +32,19 @@ app = typer.Typer(
 console = Console()
 
 class TerminalClient:
+    """Main terminal client class"""
     
     def __init__(self):
         self.console = console
         self.command_history = []
         self.session_commands = 0
+        self.mcp_client = None
         
+    async def ensure_mcp_connection(self):
+        """Ensure MCP client is connected"""
+        if self.mcp_client is None:
+            self.mcp_client = await get_mcp_client()
+
     def display_welcome(self):
         """Display welcome message and instructions"""
         welcome_text = """
@@ -63,7 +73,7 @@ Welcome to your intelligent terminal assistant! This tool can execute commands s
             border_style="blue"
         ))
     
-    def display_command_result(self, result: str, command: str, metadata: Optional[Dict] = None):
+    async def display_command_result(self, result: str, command: str, metadata: Optional[Dict] = None):
         """Display command execution results with proper formatting"""
         
         if "DANGEROUS COMMAND DETECTED" in result:
@@ -76,10 +86,15 @@ Welcome to your intelligent terminal assistant! This tool can execute commands s
             
             if Confirm.ask("Do you want to execute this command anyway?", default=False):
                 # Execute with force_execute=True
-                return self.execute_command_with_force(command)
+                force_result = await self.execute_command_with_force(command)
+                self.console.print(Panel(
+                    force_result,
+                    title="🔓 Executed with Confirmation",
+                    border_style="green" if force_result.startswith("✅") else "red"
+                ))
             else:
                 self.console.print("❌ Command cancelled by user", style="red")
-                return
+            return
         
         elif result.startswith("✅"):
             # Successful execution
@@ -101,17 +116,27 @@ Welcome to your intelligent terminal assistant! This tool can execute commands s
             # General output
             self.console.print(result)
     
-    def execute_command_with_force(self, command: str) -> str:
+    async def execute_command_with_force(self, command: str) -> str:
         """Execute a dangerous command with force_execute=True"""
-        # This will be implemented when we connect to MCP server
-        # For now, simulate the execution
-        self.console.print(f"🔓 Executing dangerous command: {command}", style="yellow")
-        return f"✅ Command executed with confirmation: {command}"
+        await self.ensure_mcp_connection()
+        
+        self.console.print(f"🔓 Executing dangerous command with confirmation: {command}", style="yellow")
+        
+        result = await self.mcp_client.execute_command(command, force_execute=True)
+        
+        if result['success']:
+            output = f"✅ Command executed successfully"
+            if result['stdout']:
+                output += f":\n{result['stdout']}"
+            else:
+                output += " (no output)"
+            return output
+        else:
+            return f"❌ Command failed:\n{result['stderr']}"
     
-    def analyze_command_safety(self, command: str):
+    async def analyze_command_safety(self, command: str):
         """Analyze command safety without executing"""
-        # This will connect to our MCP server's analyze_command_safety tool
-        # For now, let's simulate it
+        await self.ensure_mcp_connection()
         
         with Progress(
             SpinnerColumn(),
@@ -120,24 +145,32 @@ Welcome to your intelligent terminal assistant! This tool can execute commands s
         ) as progress:
             task = progress.add_task("Analyzing command safety...", total=None)
             
-            # Simulate analysis (will be replaced with actual MCP call)
-            import time
-            time.sleep(1)
-            
-            # Mock analysis result
-            analysis = f"""🔍 Command Safety Analysis:
-Original: {command}
-Risk Level: REQUIRES_CONFIRMATION
-Reason: Potentially dangerous (destructive)
-
-💡 Safety Suggestions:
-  • Consider using "rm -i" for interactive deletion
-  • Use "ls" first to verify what will be deleted
-  • Consider moving to trash instead of permanent deletion
-
-⚠️  This command will require user confirmation."""
+            # Get real analysis from MCP server
+            analysis_result = await self.mcp_client.analyze_command_safety(command)
             
             progress.remove_task(task)
+        
+        # Format the analysis result
+        analysis = f"🔍 Command Safety Analysis:\n"
+        analysis += f"Original: {analysis_result['command']}\n"
+        
+        if analysis_result['adapted_command'] != analysis_result['command']:
+            analysis += f"Adapted: {analysis_result['adapted_command']}\n"
+        
+        analysis += f"Risk Level: {analysis_result['risk_level'].upper()}\n"
+        analysis += f"Reason: {analysis_result['reason']}\n"
+        
+        if analysis_result['suggestions']:
+            analysis += f"\n💡 Safety Suggestions:\n"
+            for suggestion in analysis_result['suggestions']:
+                analysis += f"  • {suggestion}\n"
+        
+        if analysis_result['is_safe']:
+            analysis += f"\n✅ This command is safe to execute."
+        elif analysis_result['requires_confirmation']:
+            analysis += f"\n⚠️  This command will require user confirmation."
+        else:
+            analysis += f"\n❌ This command is blocked for safety."
         
         self.console.print(Panel(
             analysis,
@@ -254,7 +287,8 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                     
                     progress.remove_task(task)
                 
-                self.display_command_result(result, command)
+                # Display results
+                await self.display_command_result(result, command)
                 
                 # Add to history
                 self.command_history.append({
@@ -270,26 +304,36 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                 self.console.print(f"❌ Unexpected error: {str(e)}", style="red")
     
     async def simulate_command_execution(self, command: str) -> str:
-        """Simulate command execution (will be replaced with MCP calls)"""
-        import time
-        await asyncio.sleep(0.5)  # Simulate network delay
+        """Execute command via MCP server (replacing simulation)"""
+        await self.ensure_mcp_connection()
         
-        # Simple simulation based on command
-        if command.lower().startswith(('rm ', 'sudo ', 'chmod ')):
-            return f"""⚠️  DANGEROUS COMMAND DETECTED
-Command: {command}
-Risk: Potentially dangerous (destructive)
-Suggestions:
-  • Consider using safer alternatives
-  • Verify the command is necessary
-
-This command requires confirmation to execute."""
+        # Get real command execution from MCP server
+        result = await self.mcp_client.execute_command(command, force_execute=False)
         
-        elif command.lower() in ['ls', 'pwd', 'whoami', 'date']:
-            return f"✅ Command executed successfully:\n/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+        if result['requires_confirmation']:
+            # Format confirmation request
+            confirmation_text = f"⚠️  DANGEROUS COMMAND DETECTED\n"
+            confirmation_text += f"Command: {command}\n"
+            confirmation_text += f"Risk: {result['metadata']['reason']}\n"
+            
+            if result['metadata']['suggestions']:
+                confirmation_text += f"Suggestions:\n"
+                for suggestion in result['metadata']['suggestions']:
+                    confirmation_text += f"  • {suggestion}\n"
+            
+            confirmation_text += f"\nThis command requires confirmation to execute."
+            return confirmation_text
+        
+        elif result['success']:
+            output = f"✅ Command executed successfully"
+            if result['stdout']:
+                output += f":\n{result['stdout']}"
+            else:
+                output += " (no output)"
+            return output
         
         else:
-            return f"✅ Command executed successfully:\n{command} output would appear here"
+            return f"❌ Command failed:\n{result['stderr']}"
 
 # CLI Commands
 @app.command()
@@ -304,27 +348,64 @@ def execute(
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation for dangerous commands")
 ):
     """Execute a single command"""
-    client = TerminalClient()
-    
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console
-    ) as progress:
-        task = progress.add_task("Executing command...", total=None)
+    async def _execute():
+        client = TerminalClient()
+        await client.ensure_mcp_connection()
         
-        # TODO: Replace with actual MCP server call
-        result = f"✅ Command executed: {command}"
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console
+        ) as progress:
+            task = progress.add_task("Executing command...", total=None)
+            
+            # Use real MCP server call
+            result = await client.mcp_client.execute_command(command, force_execute=force)
+            
+            progress.remove_task(task)
         
-        progress.remove_task(task)
+        # Format and display result
+        if result['requires_confirmation'] and not force:
+            confirmation_text = f"⚠️  DANGEROUS COMMAND DETECTED\n"
+            confirmation_text += f"Command: {command}\n"
+            confirmation_text += f"Risk: {result['metadata']['reason']}\n"
+            
+            if result['metadata']['suggestions']:
+                confirmation_text += f"Suggestions:\n"
+                for suggestion in result['metadata']['suggestions']:
+                    confirmation_text += f"  • {suggestion}\n"
+            
+            confirmation_text += f"\nUse --force to execute anyway."
+            
+            console.print(Panel(
+                confirmation_text,
+                title="⚠️  Security Warning",
+                border_style="yellow"
+            ))
+        elif result['success']:
+            output = f"✅ Command executed successfully"
+            if result['stdout']:
+                output += f":\n{result['stdout']}"
+            else:
+                output += " (no output)"
+            console.print(Panel(output, title="✅ Success", border_style="green"))
+        else:
+            console.print(Panel(
+                f"❌ Command failed:\n{result['stderr']}", 
+                title="❌ Error", 
+                border_style="red"
+            ))
     
-    client.display_command_result(result, command)
+    asyncio.run(_execute())
 
 @app.command()
 def analyze(command: str = typer.Argument(..., help="Command to analyze")):
     """Analyze command safety without executing"""
-    client = TerminalClient()
-    client.analyze_command_safety(command)
+    async def _analyze():
+        client = TerminalClient()
+        await client.analyze_command_safety(command)
+    
+    asyncio.run(_analyze())
 
 if __name__ == "__main__":
     app() 
