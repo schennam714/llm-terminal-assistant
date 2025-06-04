@@ -1,0 +1,47 @@
+{
+  "session_id": "session_20250604_171042",
+  "start_time": "2025-06-04T17:10:42.455874",
+  "current_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",
+  "conversation_history": [
+    {
+      "timestamp": "2025-06-04T17:24:44.066417",
+      "user_input": "show current directory",
+      "ai_response": "This command will display the current working directory path.",
+      "commands_executed": [
+        "pwd"
+      ],
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-04T17:27:10.470641",
+      "user_input": "show current directory",
+      "ai_response": "This command will display the current working directory.",
+      "commands_executed": [
+        "pwd"
+      ],
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    }
+  ],
+  "command_history": [
+    {
+      "timestamp": "2025-06-04T17:24:44.065726",
+      "command": "pwd",
+      "success": true,
+      "output": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",
+      "natural_language_intent": "",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-04T17:27:10.470102",
+      "command": "pwd",
+      "success": true,
+      "output": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",
+      "natural_language_intent": "",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    }
+  ],
+  "context": {},
+  "user_preferences": {},
+  "last_files_mentioned": [],
+  "active_project": null
+}

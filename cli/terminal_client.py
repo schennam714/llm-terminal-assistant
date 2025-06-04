@@ -20,25 +20,27 @@ from rich.markdown import Markdown
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 
-# Import our MCP client
+# Import our MCP client and A2A server
 from cli.mcp_client import get_mcp_client
+from a2a_server.a2a_server import process_natural_language_request, get_session_info
 
 app = typer.Typer(
     name="llm-terminal",
-    help="🤖 LLM-Powered Terminal Assistant with Smart Command Execution",
+    help="🤖 LLM-Powered Terminal Assistant with Smart Command Execution and Natural Language Processing",
     rich_markup_mode="rich"
 )
 
 console = Console()
 
 class TerminalClient:
-    """Main terminal client class"""
+    """Main terminal client class with A2A integration"""
     
     def __init__(self):
         self.console = console
         self.command_history = []
         self.session_commands = 0
         self.mcp_client = None
+        self.natural_language_mode = False
         
     async def ensure_mcp_connection(self):
         """Ensure MCP client is connected"""
@@ -50,18 +52,26 @@ class TerminalClient:
         welcome_text = """
 # 🤖 LLM-Powered Terminal Assistant
 
-Welcome to your intelligent terminal assistant! This tool can execute commands safely with smart risk assessment.
+Welcome to your intelligent terminal assistant! This tool can execute commands safely with smart risk assessment and natural language processing.
 
 ## 🔒 Security Features
 - **Safe Commands**: Execute immediately (ls, pwd, cat, etc.)
 - **Dangerous Commands**: Require your confirmation (rm, sudo, chmod, etc.)
 - **Forbidden Commands**: Blocked for safety (rm -rf /, format c:, etc.)
 
+## 🧠 AI Features (NEW!)
+- **Natural Language**: Use plain English to describe what you want
+- **Context Awareness**: Remembers previous commands and files
+- **Smart Translation**: Converts your intent to safe terminal commands
+
 ## 💡 Commands
-- Type any terminal command naturally
+- Type any terminal command directly (e.g., `ls`, `pwd`)
+- Use `natural "describe what you want"` for AI assistance
+- Use `toggle-mode` to switch between direct and natural language modes
 - Use `help` for assistance
 - Use `history` to see previous commands
 - Use `analyze <command>` to check safety without executing
+- Use `session-info` to see current AI session context
 - Use `quit` or `exit` to leave
 
 ---
@@ -69,7 +79,7 @@ Welcome to your intelligent terminal assistant! This tool can execute commands s
         
         self.console.print(Panel(
             Markdown(welcome_text),
-            title="🚀 Terminal Assistant",
+            title="🚀 Terminal Assistant v0.4.0-alpha",
             border_style="blue"
         ))
     
@@ -115,6 +125,125 @@ Welcome to your intelligent terminal assistant! This tool can execute commands s
         else:
             # General output
             self.console.print(result)
+    
+    async def display_natural_language_result(self, result: Dict[str, Any]):
+        """Display results from natural language processing"""
+        translation = result.get('translation', {})
+        execution_results = result.get('execution_results', [])
+        
+        # Show AI translation
+        if translation:
+            translation_text = f"🧠 **AI Translation:**\n{translation.get('explanation', 'No explanation provided')}\n\n"
+            
+            commands = translation.get('commands', [])
+            if commands:
+                translation_text += f"**Commands to execute:**\n"
+                for i, cmd in enumerate(commands, 1):
+                    translation_text += f"{i}. `{cmd}`\n"
+            
+            if translation.get('safety_notes'):
+                translation_text += f"\n⚠️  **Safety Notes:** {translation['safety_notes']}"
+            
+            self.console.print(Panel(
+                Markdown(translation_text),
+                title="🤖 AI Assistant",
+                border_style="cyan"
+            ))
+        
+        # Handle confirmation requirement
+        if result.get('requires_confirmation'):
+            self.console.print(Panel(
+                "⚠️  These commands require confirmation to execute.\nUse `--force` flag or confirm when prompted.",
+                title="Confirmation Required",
+                border_style="yellow"
+            ))
+            return
+        
+        # Show execution results
+        if execution_results:
+            for i, exec_result in enumerate(execution_results, 1):
+                command = exec_result['command']
+                success = exec_result['success']
+                output = exec_result['output']
+                error = exec_result['error']
+                
+                if success:
+                    result_text = f"✅ **Command {i}:** `{command}`\n"
+                    if output:
+                        result_text += f"```\n{output}\n```"
+                    else:
+                        result_text += "*No output*"
+                    
+                    self.console.print(Panel(
+                        Markdown(result_text),
+                        title=f"Execution Result {i}",
+                        border_style="green"
+                    ))
+                else:
+                    result_text = f"❌ **Command {i}:** `{command}`\n"
+                    if error:
+                        result_text += f"**Error:** {error}"
+                    
+                    self.console.print(Panel(
+                        Markdown(result_text),
+                        title=f"Execution Error {i}",
+                        border_style="red"
+                    ))
+    
+    async def process_natural_language_command(self, user_input: str, force_execute: bool = False):
+        """Process natural language command through A2A server"""
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=self.console
+        ) as progress:
+            task = progress.add_task("🧠 Processing with AI...", total=None)
+            
+            try:
+                result = await process_natural_language_request(user_input, force_execute)
+                progress.remove_task(task)
+                
+                await self.display_natural_language_result(result)
+                
+                # Add to history
+                self.command_history.append({
+                    'command': f"natural: {user_input}",
+                    'status': 'Success' if result.get('success') else 'Failed',
+                    'session_id': self.session_commands,
+                    'type': 'natural_language'
+                })
+                
+            except Exception as e:
+                progress.remove_task(task)
+                self.console.print(Panel(
+                    f"❌ Error processing natural language request:\n{str(e)}",
+                    title="AI Error",
+                    border_style="red"
+                ))
+    
+    async def show_session_info(self):
+        """Display current AI session information"""
+        try:
+            session_info = await get_session_info()
+            
+            info_text = f"""
+**Session ID:** {session_info.get('session_id', 'Unknown')}
+**Start Time:** {session_info.get('start_time', 'Unknown')}
+**Current Directory:** {session_info.get('current_directory', 'Unknown')}
+**Conversations:** {session_info.get('conversation_count', 0)}
+**Commands Executed:** {session_info.get('command_count', 0)}
+**Active Project:** {session_info.get('active_project', 'None')}
+**Recent Files:** {', '.join(session_info.get('recent_files', [])) or 'None'}
+            """
+            
+            self.console.print(Panel(
+                Markdown(info_text),
+                title="🧠 AI Session Information",
+                border_style="magenta"
+            ))
+            
+        except Exception as e:
+            self.console.print(f"❌ Error getting session info: {str(e)}", style="red")
     
     async def execute_command_with_force(self, command: str) -> str:
         """Execute a dangerous command with force_execute=True"""
@@ -185,12 +314,17 @@ Welcome to your intelligent terminal assistant! This tool can execute commands s
         
         table = Table(title="📝 Command History")
         table.add_column("#", style="cyan", width=4)
+        table.add_column("Type", style="magenta", width=8)
         table.add_column("Command", style="white")
         table.add_column("Status", style="green")
         
         for i, cmd_info in enumerate(self.command_history[-10:], 1):  # Show last 10
+            cmd_type = cmd_info.get('type', 'direct')
+            type_display = "🧠 AI" if cmd_type == 'natural_language' else "⚡ Direct"
+            
             table.add_row(
                 str(i),
+                type_display,
                 cmd_info.get('command', ''),
                 cmd_info.get('status', 'Unknown')
             )
@@ -206,17 +340,31 @@ Welcome to your intelligent terminal assistant! This tool can execute commands s
 - The assistant will execute safe commands immediately
 - Dangerous commands will ask for confirmation
 
+### 🧠 Natural Language Mode (NEW!)
+- `natural "list all Python files"` - Use AI to translate natural language
+- `toggle-mode` - Switch between direct and natural language modes
+- When in natural mode, just type what you want: `"show me the largest files"`
+
 ### Special Commands
 - `help` - Show this help message
 - `history` - Show recent command history
+- `session-info` - Show AI session context and memory
 - `analyze <command>` - Check command safety without executing
 - `clear` - Clear the terminal screen
 - `quit` or `exit` - Exit the assistant
 
 ### Examples
 ```bash
+# Direct commands
 ls -la                    # Safe - executes immediately
 rm important_file.txt     # Dangerous - asks for confirmation
+
+# Natural language commands
+natural "create a Python file called hello.py"
+natural "find all files larger than 100MB"
+natural "show me what's using the most disk space"
+
+# Safety analysis
 analyze "sudo rm -rf /"   # Analysis only - no execution
 ```
 
@@ -224,6 +372,11 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
 - 🟢 **Safe**: ls, pwd, cat, git status, etc.
 - 🟡 **Confirmation Required**: rm, sudo, chmod, etc.
 - 🔴 **Blocked**: rm -rf /, format c:, fork bombs, etc.
+
+### 🧠 AI Features
+- **Context Memory**: Remembers previous commands and files
+- **Smart Translation**: Converts natural language to appropriate commands
+- **Safety Integration**: AI respects the same security rules as direct commands
         """
         
         self.console.print(Panel(
@@ -233,15 +386,22 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
         ))
     
     async def run_interactive_session(self):
-        """Main interactive session loop"""
+        """Main interactive session loop with A2A integration"""
         self.display_welcome()
+        
+        # Show current mode
+        mode_text = "🧠 Natural Language" if self.natural_language_mode else "⚡ Direct Command"
+        self.console.print(f"Current mode: {mode_text}", style="dim")
         
         while True:
             try:
-                command = Prompt.ask(
-                    "\n[bold blue]🤖 Terminal Assistant[/bold blue]",
-                    default=""
-                ).strip()
+                # Dynamic prompt based on mode
+                if self.natural_language_mode:
+                    prompt_text = "\n[bold blue]🧠 AI Assistant[/bold blue]"
+                else:
+                    prompt_text = "\n[bold blue]🤖 Terminal Assistant[/bold blue]"
+                
+                command = Prompt.ask(prompt_text, default="").strip()
                 
                 if not command:
                     continue
@@ -259,6 +419,16 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                     self.show_command_history()
                     continue
                 
+                elif command.lower() == 'session-info':
+                    await self.show_session_info()
+                    continue
+                
+                elif command.lower() == 'toggle-mode':
+                    self.natural_language_mode = not self.natural_language_mode
+                    mode_text = "🧠 Natural Language" if self.natural_language_mode else "⚡ Direct Command"
+                    self.console.print(f"Switched to: {mode_text}", style="green")
+                    continue
+                
                 elif command.lower() == 'clear':
                     os.system('clear' if os.name != 'nt' else 'cls')
                     continue
@@ -266,36 +436,49 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                 elif command.lower().startswith('analyze '):
                     cmd_to_analyze = command[8:].strip()
                     if cmd_to_analyze:
-                        self.analyze_command_safety(cmd_to_analyze)
+                        await self.analyze_command_safety(cmd_to_analyze)
                     else:
                         self.console.print("❌ Please provide a command to analyze", style="red")
                     continue
                 
-                # Execute the command
+                elif command.lower().startswith('natural '):
+                    # Force natural language processing
+                    nl_command = command[8:].strip().strip('"\'')
+                    if nl_command:
+                        await self.process_natural_language_command(nl_command)
+                    else:
+                        self.console.print("❌ Please provide a natural language request", style="red")
+                    continue
+                
+                # Execute based on current mode
                 self.session_commands += 1
                 
-                with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[progress.description]{task.description}"),
-                    console=self.console
-                ) as progress:
-                    task = progress.add_task("Executing command...", total=None)
+                if self.natural_language_mode:
+                    # Process as natural language
+                    await self.process_natural_language_command(command)
+                else:
+                    # Process as direct command (existing logic)
+                    with Progress(
+                        SpinnerColumn(),
+                        TextColumn("[progress.description]{task.description}"),
+                        console=self.console
+                    ) as progress:
+                        task = progress.add_task("Executing command...", total=None)
+                        
+                        result = await self.simulate_command_execution(command)
+                        
+                        progress.remove_task(task)
                     
-                    # TODO: Replace with actual MCP server call
-                    # For now, simulate command execution
-                    result = await self.simulate_command_execution(command)
+                    # Display results
+                    await self.display_command_result(result, command)
                     
-                    progress.remove_task(task)
-                
-                # Display results
-                await self.display_command_result(result, command)
-                
-                # Add to history
-                self.command_history.append({
-                    'command': command,
-                    'status': 'Success' if result.startswith('✅') else 'Failed',
-                    'session_id': self.session_commands
-                })
+                    # Add to history
+                    self.command_history.append({
+                        'command': command,
+                        'status': 'Success' if result.startswith('✅') else 'Failed',
+                        'session_id': self.session_commands,
+                        'type': 'direct'
+                    })
                 
             except KeyboardInterrupt:
                 self.console.print("\n\n👋 Interrupted by user. Goodbye!", style="yellow")
@@ -338,7 +521,7 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
 # CLI Commands
 @app.command()
 def interactive():
-    """Start interactive terminal session"""
+    """Start interactive terminal session with AI capabilities"""
     client = TerminalClient()
     asyncio.run(client.run_interactive_session())
 
@@ -399,6 +582,18 @@ def execute(
     asyncio.run(_execute())
 
 @app.command()
+def natural(
+    request: str = typer.Argument(..., help="Natural language request"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation for dangerous commands")
+):
+    """Process natural language request using AI"""
+    async def _natural():
+        client = TerminalClient()
+        await client.process_natural_language_command(request, force_execute=force)
+    
+    asyncio.run(_natural())
+
+@app.command()
 def analyze(command: str = typer.Argument(..., help="Command to analyze")):
     """Analyze command safety without executing"""
     async def _analyze():
@@ -406,6 +601,15 @@ def analyze(command: str = typer.Argument(..., help="Command to analyze")):
         await client.analyze_command_safety(command)
     
     asyncio.run(_analyze())
+
+@app.command()
+def session_info():
+    """Show current AI session information"""
+    async def _session_info():
+        client = TerminalClient()
+        await client.show_session_info()
+    
+    asyncio.run(_session_info())
 
 if __name__ == "__main__":
     app() 

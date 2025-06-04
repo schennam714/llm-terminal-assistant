@@ -1,0 +1,33 @@
+{
+  "session_id": "session_20250604_172701",
+  "start_time": "2025-06-04T17:27:01.236757",
+  "current_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",
+  "conversation_history": [
+    {
+      "timestamp": "2025-06-04T17:27:01.237175",
+      "user_input": "test user input",
+      "ai_response": "test ai response",
+      "commands_executed": [
+        "ls",
+        "pwd"
+      ],
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    }
+  ],
+  "command_history": [
+    {
+      "timestamp": "2025-06-04T17:27:01.237058",
+      "command": "ls -la",
+      "success": true,
+      "output": "file1.txt\nfile2.py",
+      "natural_language_intent": "list files",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    }
+  ],
+  "context": {
+    "test_key": "test_value"
+  },
+  "user_preferences": {},
+  "last_files_mentioned": [],
+  "active_project": null
+}
