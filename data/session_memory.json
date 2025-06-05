@@ -20,6 +20,15 @@
         "pwd"
       ],
       "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:10:09.653699",
+      "user_input": "show current directory",
+      "ai_response": "This command will display the current working directory path.",
+      "commands_executed": [
+        "pwd"
+      ],
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
     }
   ],
   "command_history": [
@@ -33,6 +42,14 @@
     },
     {
       "timestamp": "2025-06-04T17:27:10.470102",
+      "command": "pwd",
+      "success": true,
+      "output": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",
+      "natural_language_intent": "",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:10:09.653384",
       "command": "pwd",
       "success": true,
       "output": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",

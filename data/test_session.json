@@ -1,10 +1,10 @@
 {
-  "session_id": "session_20250604_172701",
-  "start_time": "2025-06-04T17:27:01.236757",
+  "session_id": "session_20250605_140954",
+  "start_time": "2025-06-05T14:09:54.827574",
   "current_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",
   "conversation_history": [
     {
-      "timestamp": "2025-06-04T17:27:01.237175",
+      "timestamp": "2025-06-05T14:09:54.828113",
       "user_input": "test user input",
       "ai_response": "test ai response",
       "commands_executed": [
@@ -16,7 +16,7 @@
   ],
   "command_history": [
     {
-      "timestamp": "2025-06-04T17:27:01.237058",
+      "timestamp": "2025-06-05T14:09:54.828040",
       "command": "ls -la",
       "success": true,
       "output": "file1.txt\nfile2.py",

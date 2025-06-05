@@ -156,6 +156,11 @@ class Phase4ATestSuite:
                 "input": "delete the file test.txt",
                 "expected_commands": ["rm"],
                 "description": "File deletion (should require confirmation)"
+            },
+            {
+                "input": "create a file and write 'Hello, world!' to it",
+                "expected_commands": ["touch", "echo"],
+                "description": "File creation and content writing"
             }
         ]
         
