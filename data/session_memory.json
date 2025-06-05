@@ -55,6 +55,102 @@
       "output": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",
       "natural_language_intent": "",
       "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:21:30.159772",
+      "command": "pwd",
+      "success": true,
+      "output": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",
+      "natural_language_intent": "Show current directory",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:21:30.167602",
+      "command": "ls",
+      "success": true,
+      "output": "CHANGELOG.md\nREADME.md\na2a_server\ncli\ndata\ndocker\nenv.example\nlogs\nmain.py\nmcp_server\npyproject.toml\nrequirements.txt\nscripts\nuv.lock\nvenv",
+      "natural_language_intent": "List files",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:31:33.154384",
+      "command": "pwd",
+      "success": true,
+      "output": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant",
+      "natural_language_intent": "Show current directory",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:31:33.159671",
+      "command": "ls",
+      "success": true,
+      "output": "CHANGELOG.md\nREADME.md\na2a_server\ncli\ndata\ndocker\nenv.example\nlogs\nmain.py\nmcp_server\npyproject.toml\nrequirements.txt\nscripts\nuv.lock\nvenv",
+      "natural_language_intent": "List files",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:31:39.181541",
+      "command": "nonexistent_command_xyz",
+      "success": false,
+      "output": "/bin/sh: nonexistent_command_xyz: command not found",
+      "natural_language_intent": "This will fail",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:31:39.188032",
+      "command": "test command",
+      "success": true,
+      "output": "test output",
+      "natural_language_intent": "test intent",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:34:09.321823",
+      "command": "nonexistent_command_xyz",
+      "success": false,
+      "output": "/bin/sh: nonexistent_command_xyz: command not found",
+      "natural_language_intent": "This will fail",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T14:34:09.328708",
+      "command": "test command",
+      "success": true,
+      "output": "test output",
+      "natural_language_intent": "test intent",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T17:19:09.881667",
+      "command": "nonexistent_command_xyz",
+      "success": false,
+      "output": "/bin/sh: nonexistent_command_xyz: command not found",
+      "natural_language_intent": "This will fail",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T17:19:09.890238",
+      "command": "test command",
+      "success": true,
+      "output": "test output",
+      "natural_language_intent": "test intent",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T17:25:53.312809",
+      "command": "nonexistent_command_xyz",
+      "success": false,
+      "output": "/bin/sh: nonexistent_command_xyz: command not found",
+      "natural_language_intent": "This will fail",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-05T17:25:53.319681",
+      "command": "test command",
+      "success": true,
+      "output": "test output",
+      "natural_language_intent": "test intent",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
     }
   ],
   "context": {},

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-A2A (Agent-to-Agent) Server - Phase 4A Implementation
-Handles natural language processing and command translation using OpenAI
+A2A (Agent-to-Agent) Server - Phase 4B Implementation
+Handles natural language processing, command translation, and multi-step planning using OpenAI
 """
 
 import os
@@ -20,6 +20,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from cli.mcp_client import get_mcp_client
 from a2a_server.memory import SessionMemory
+from a2a_server.planner import TaskPlanner, PlanExecutor, ExecutionPlan
 
 # Load environment variables
 load_dotenv()
@@ -37,26 +38,31 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class A2AServer:
-    """Main A2A server for natural language command processing"""
+    """Main A2A server for natural language command processing with multi-step planning"""
     
     def __init__(self):
         self.openai_client = openai.AsyncOpenAI(
             api_key=os.getenv('OPENAI_API_KEY')
         )
-        self.model = os.getenv('OPENAI_MODEL', 'gpt-4')
+        self.model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
         self.max_tokens = int(os.getenv('OPENAI_MAX_TOKENS', '1000'))
         self.temperature = float(os.getenv('OPENAI_TEMPERATURE', '0.1'))
         
         self.memory = SessionMemory(os.getenv('MEMORY_FILE_PATH', 'data/session_memory.json'))
         self.mcp_client = None
         
-        logger.info("A2A Server initialized")
+        # Initialize planning components
+        self.task_planner = TaskPlanner(self.openai_client, self.memory)
+        self.plan_executor = None  # Will be initialized when MCP client is ready
+        
+        logger.info("A2A Server initialized with Planning Layer")
     
     async def ensure_mcp_connection(self):
         """Ensure MCP client is connected"""
         if self.mcp_client is None:
             self.mcp_client = await get_mcp_client()
-            logger.info("Connected to MCP server")
+            self.plan_executor = PlanExecutor(self.mcp_client, self.memory)
+            logger.info("Connected to MCP server and initialized Plan Executor")
     
     def build_system_prompt(self) -> str:
         """Build system prompt with current context"""
@@ -312,6 +318,126 @@ CURRENT CONTEXT:"""
     def get_session_info(self) -> Dict[str, Any]:
         """Get current session information"""
         return self.memory.get_session_summary()
+
+    async def process_request_with_planning(self, user_input: str, force_execute: bool = False, use_planning: bool = True) -> Dict[str, Any]:
+        """Enhanced request processing with multi-step planning capability"""
+        logger.info(f"Processing request with planning: {user_input}")
+        
+        await self.ensure_mcp_connection()
+        
+        # Determine if this request needs multi-step planning
+        if use_planning and await self._should_use_planning(user_input):
+            return await self._process_with_planning(user_input, force_execute)
+        else:
+            # Fall back to single-step processing
+            return await self.process_request(user_input, force_execute)
+    
+    async def _should_use_planning(self, user_input: str) -> bool:
+        """Determine if a request should use multi-step planning"""
+        # Keywords that suggest multi-step operations
+        planning_keywords = [
+            "setup", "install", "configure", "deploy", "backup", "restore",
+            "create project", "build", "compile", "test and", "clean up",
+            "organize", "migrate", "update all", "batch", "multiple",
+            "then", "after", "before", "first", "next", "finally"
+        ]
+        
+        user_input_lower = user_input.lower()
+        return any(keyword in user_input_lower for keyword in planning_keywords)
+    
+    async def _process_with_planning(self, user_input: str, force_execute: bool = False) -> Dict[str, Any]:
+        """Process request using multi-step planning"""
+        try:
+            # Create execution plan
+            context = {
+                'current_directory': self.memory.get_context('current_directory', os.getcwd()),
+                'recent_commands': self.memory.get_recent_commands(3),
+                'conversation_context': self.memory.get_conversation_context(2)
+            }
+            
+            plan = await self.task_planner.create_execution_plan(user_input, context)
+            
+            # Check if plan requires confirmation
+            if plan.requires_confirmation and not force_execute:
+                return {
+                    "success": False,
+                    "type": "multi_step_plan",
+                    "plan": plan.to_dict(),
+                    "message": plan.confirmation_message or "Multi-step plan requires confirmation",
+                    "requires_confirmation": True
+                }
+            
+            # Execute the plan
+            execution_result = await self.plan_executor.execute_plan(plan, force_execute)
+            
+            # Update memory with conversation
+            self.memory.add_conversation(
+                user_input=user_input,
+                ai_response=plan.description,
+                commands_executed=[step.command for step in plan.steps]
+            )
+            
+            return {
+                "success": execution_result["success"],
+                "type": "multi_step_plan",
+                "plan": execution_result["plan"],
+                "message": execution_result["message"],
+                "execution_summary": self._generate_execution_summary(plan)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in multi-step planning: {e}")
+            # Fall back to single-step processing
+            return await self.process_request(user_input, force_execute)
+    
+    def _generate_execution_summary(self, plan: ExecutionPlan) -> Dict[str, Any]:
+        """Generate a summary of plan execution"""
+        progress = plan.get_progress()
+        
+        successful_steps = [s for s in plan.steps if s.status.value == "completed"]
+        failed_steps = [s for s in plan.steps if s.status.value == "failed"]
+        
+        return {
+            "total_steps": progress["total_steps"],
+            "completed_steps": progress["completed_steps"],
+            "failed_steps": progress["failed_steps"],
+            "success_rate": f"{progress['progress_percentage']:.1f}%",
+            "execution_time": self._calculate_execution_time(plan),
+            "successful_commands": [s.command for s in successful_steps],
+            "failed_commands": [s.command for s in failed_steps]
+        }
+    
+    def _calculate_execution_time(self, plan: ExecutionPlan) -> str:
+        """Calculate total execution time for a plan"""
+        if plan.start_time and plan.end_time:
+            duration = plan.end_time - plan.start_time
+            return f"{duration.total_seconds():.2f} seconds"
+        return "Unknown"
+    
+    # Planning management methods
+    async def get_active_plans(self) -> List[Dict[str, Any]]:
+        """Get all active execution plans"""
+        plans = self.task_planner.get_active_plans()
+        return [plan.to_dict() for plan in plans]
+    
+    async def get_plan_status(self, plan_id: str) -> Optional[Dict[str, Any]]:
+        """Get status of a specific plan"""
+        plan = self.task_planner.get_plan(plan_id)
+        return plan.to_dict() if plan else None
+    
+    async def cancel_plan(self, plan_id: str) -> bool:
+        """Cancel an execution plan"""
+        return self.task_planner.cancel_plan(plan_id)
+    
+    async def rollback_plan(self, plan_id: str) -> Dict[str, Any]:
+        """Rollback a failed plan"""
+        await self.ensure_mcp_connection()
+        plan = self.task_planner.get_plan(plan_id)
+        
+        if not plan:
+            return {"success": False, "message": "Plan not found"}
+        
+        return await self.plan_executor.rollback_plan(plan)
 
 # Standalone functions for CLI integration
 async def process_natural_language_request(user_input: str, force_execute: bool = False) -> Dict[str, Any]:
