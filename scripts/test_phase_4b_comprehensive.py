@@ -87,10 +87,10 @@ class ComprehensivePhase4BTestSuite:
         # Initialize A2A server
         try:
             self.a2a_server = A2AServer()
-            console.print("A2A Server with Planning Layer initialized")
+            console.print("✅ A2A Server with Planning Layer initialized")
             return has_openai
         except Exception as e:
-            console.print(f"Failed to initialize A2A Server: {e}")
+            console.print(f"❌ Failed to initialize A2A Server: {e}")
             return False
     
     def cleanup(self):
@@ -311,7 +311,7 @@ class ComprehensivePhase4BTestSuite:
     
     async def test_error_handling(self):
         """Test comprehensive error handling scenarios"""
-        console.print("\nTesting Error Handling...")
+        console.print("\n🚨 Testing Error Handling...")
         
         # Test 1: Plan execution failures
         try:
@@ -791,9 +791,9 @@ class ComprehensivePhase4BTestSuite:
             failed_tests = [r for r in results if not r['success']]
             if failed_tests:
                 for test in failed_tests:
-                    console.print(f"  {test['test']}: {test['details'][:60]}...")
+                    console.print(f"  ❌ {test['test']}: {test['details'][:60]}...")
             else:
-                console.print(f"  All {category.lower()} tests passed!")
+                console.print(f"  ✅ All {category.lower()} tests passed!")
         
         # Detailed results table
         table = Table(title="Detailed Test Results")
@@ -803,7 +803,7 @@ class ComprehensivePhase4BTestSuite:
         table.add_column("Details", style="dim", width=40)
         
         for result in self.test_results:
-            status = "PASS" if result['success'] else "FAIL"
+            status = "✅ PASS" if result['success'] else "❌ FAIL"
             table.add_row(
                 result['category'],
                 result['test'],
@@ -818,16 +818,16 @@ class ComprehensivePhase4BTestSuite:
 **Overall Results:**
 - **Tests Passed:** {passed_tests}/{total_tests}
 - **Success Rate:** {success_rate:.1f}%
-- **Phase 4B Status:** {'PRODUCTION READY' if success_rate >= 90 else 'NEEDS ATTENTION' if success_rate >= 75 else 'REQUIRES FIXES'}
+- **Phase 4B Status:** {'✅ PRODUCTION READY' if success_rate >= 90 else '⚠️ NEEDS ATTENTION' if success_rate >= 75 else '❌ REQUIRES FIXES'}
 
 **Test Coverage:**
-- Core component functionality
-- Edge cases and boundary conditions  
-- Error handling and recovery
-- Integration between components
-- Performance under load
-- Security validation
-- AI integration reliability
+- ✅ Core component functionality
+- ✅ Edge cases and boundary conditions  
+- ✅ Error handling and recovery
+- ✅ Integration between components
+- ✅ Performance under load
+- ✅ Security validation
+- ✅ AI integration reliability
 
 **Quality Metrics:**
 - **Robustness:** {'High' if success_rate >= 90 else 'Medium' if success_rate >= 75 else 'Low'}
@@ -845,11 +845,11 @@ class ComprehensivePhase4BTestSuite:
         
         # Recommendations
         if success_rate >= 90:
-            console.print("\nEXCELLENT! Phase 4B is production-ready with comprehensive edge case coverage!")
+            console.print("\n🎉 **EXCELLENT!** Phase 4B is production-ready with comprehensive edge case coverage!")
         elif success_rate >= 75:
-            console.print("\nGOOD but some areas need attention. Review failed tests before production.")
+            console.print("\n⚠️  **GOOD** but some areas need attention. Review failed tests before production.")
         else:
-            console.print("\nNEEDS WORK - Multiple issues detected. Address failed tests before proceeding.")
+            console.print("\n❌ **NEEDS WORK** - Multiple issues detected. Address failed tests before proceeding.")
     
     async def run_comprehensive_tests(self):
         """Run the complete comprehensive test suite"""
@@ -867,7 +867,7 @@ class ComprehensivePhase4BTestSuite:
             if has_openai:
                 await self.test_ai_integration()
             else:
-                console.print("Skipping AI integration tests (no OpenAI API key)")
+                console.print("⚠️  Skipping AI integration tests (no OpenAI API key)")
             
             # Display comprehensive results
             self.display_comprehensive_results()

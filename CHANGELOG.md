@@ -5,9 +5,46 @@ All notable changes to the LLM Terminal Assistant project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Phase 4B.1] - 2024-12-XX - Critical Bug Fixes
+
+### PHASE 4B.1: CRITICAL BUG FIXES - COMPLETE
+
+**Critical Issues Resolved:**
+- **Plan Persistence System**: Fixed major bug where execution plans were not saved between sessions
+- **Dependency Resolution**: Fixed critical dependency matching issue preventing multi-step execution
+- **Command Processing**: Fixed plan command routing to ensure forced planning mode works correctly
+
+**Technical Fixes:**
+- **Plan Storage**: Added JSON-based persistence system (`data/execution_plans.json`)
+  - Plans now automatically save when created, updated, or cancelled
+  - Plans load automatically when A2A server initializes
+  - Cross-session plan access now fully functional
+- **Dependency Bug**: Fixed dependency index-to-ID conversion issue
+  - AI generates dependencies as step indices ("0", "1")
+  - System now converts to actual step IDs ("plan_20250606_193037_4_step_1")
+  - Multi-step plans now execute all steps instead of failing after step 1
+- **Force Planning**: Added `force_planning` parameter to bypass keyword detection
+  - `plan "task"` command now always creates multi-step plans regardless of keywords
+  - Improved planning mode activation logic
+
+**Impact:**
+- **Before**: Plans would fail after first step due to dependency resolution errors
+- **After**: Plans execute all steps in correct dependency order
+- **Before**: Plans only existed in memory and were lost between sessions
+- **After**: Plans persist and are available for rollback across terminal sessions
+- **Before**: Simple tasks wouldn't trigger planning mode even with `plan` command
+- **After**: `plan` command always forces multi-step planning
+
+**Files Modified:**
+- `a2a_server/planner.py`: Added persistence system and dependency resolution fix
+- `a2a_server/a2a_server.py`: Added force_planning parameter and persistence integration
+- `cli/terminal_client.py`: Updated plan command to use force_planning mode
+
+---
+
 ## [Phase 4B] - 2024-12-XX - Planning Layer Implementation
 
-### 🎯 **PHASE 4B: PLANNING LAYER - COMPLETE ✅**
+### PHASE 4B: PLANNING LAYER - COMPLETE
 
 **Major Features Added:**
 - **Multi-Step Planning Engine** (`a2a_server/planner.py`)
@@ -67,7 +104,7 @@ User Input → CLI Client → A2A Server → Planning Layer → MCP Client → M
 
 ## [Phase 4A] - 2024-12-XX - A2A Foundation
 
-### 🎯 **PHASE 4A: A2A FOUNDATION - COMPLETE ✅**
+### PHASE 4A: A2A FOUNDATION - COMPLETE
 
 **Major Features Added:**
 - **Session Memory System** (`a2a_server/memory.py`)
@@ -132,7 +169,7 @@ toggle-mode     # Switch between direct/natural language modes
 
 ## [Phase 3] - 2024-12-XX - CLI Client
 
-### 🎯 **PHASE 3: CLI CLIENT - COMPLETE ✅**
+### PHASE 3: CLI CLIENT - COMPLETE
 
 **Major Features Added:**
 - **Complete CLI Client** (`cli/terminal_client.py`)
@@ -165,7 +202,7 @@ toggle-mode     # Switch between direct/natural language modes
 
 ## [Phase 2] - 2024-12-XX - MCP Server
 
-### 🎯 **PHASE 2: MCP SERVER - COMPLETE ✅**
+### PHASE 2: MCP SERVER - COMPLETE
 
 **Major Features Added:**
 - **MCP Server Implementation** (`mcp_server/mcp_server.py`)
@@ -194,7 +231,7 @@ toggle-mode     # Switch between direct/natural language modes
 
 ## [Phase 1] - 2024-12-XX - Project Foundation
 
-### 🎯 **PHASE 1: PROJECT FOUNDATION - COMPLETE ✅**
+### PHASE 1: PROJECT FOUNDATION - COMPLETE
 
 **Project Setup:**
 - **Modern Python Environment**: Python 3.11+ with uv package manager
@@ -246,7 +283,9 @@ This LLM-powered terminal assistant demonstrates modern software architecture wi
 **Test Coverage**: 100% success rate across all test suites
 **Supported Platforms**: Windows, macOS, Linux
 
-## [0.4.0-alpha] - 2024-12-19 - Phase 4A: A2A Foundation Complete 🧠
+**Post-Release Updates**: Phase 4B.1 addressed critical plan persistence and dependency resolution bugs discovered during real-world usage testing.
+
+## [0.4.0-alpha] - 2024-12-19 - Phase 4A: A2A Foundation Complete
 
 ### Major Milestone: Natural Language Processing Foundation
 
@@ -309,10 +348,10 @@ This release introduces the A2A (Agent-to-Agent) foundation layer, enabling natu
 - **Context Building**: Smart prompt construction with session history
 
 ### Testing Results
-- ✅ Memory System: 100% pass rate (5/5 tests)
-- ✅ MCP Integration: Maintained compatibility
-- ✅ Safety System: All security features preserved
-- ✅ CLI Enhancement: Backward compatible with new features
+- Memory System: 100% pass rate (5/5 tests)
+- MCP Integration: Maintained compatibility
+- Safety System: All security features preserved
+- CLI Enhancement: Backward compatible with new features
 
 ### Dependencies Added
 - `openai` - GPT-4 integration
@@ -320,12 +359,12 @@ This release introduces the A2A (Agent-to-Agent) foundation layer, enabling natu
 - `fastapi` - Future API server foundation
 - `uvicorn` - ASGI server support
 
-### Phase 4A Status: ✅ COMPLETE
+### Phase 4A Status: COMPLETE
 **Ready for Phase 4B: Planning Layer Implementation**
 
 The A2A foundation provides a solid base for natural language processing while maintaining the robust security and execution capabilities established in previous phases.
 
-## [0.3.0] - 2024-12-19 - CLI-MCP Integration Complete 🎉
+## [0.3.0] - 2024-12-19 - CLI-MCP Integration Complete
 
 ### Major Milestone: Full CLI-MCP Pipeline Working
 
@@ -380,14 +419,14 @@ This release marks the completion of the core CLI-MCP integration, creating a fu
 - Cross-platform compatibility
 
 ### Testing
-- ✅ Safe command execution (pwd, ls, cat)
-- ✅ Dangerous command detection and confirmation
-- ✅ Forbidden command blocking
-- ✅ Cross-platform command adaptation
-- ✅ Real-time safety analysis
-- ✅ Interactive and single-command modes
+- Safe command execution (pwd, ls, cat)
+- Dangerous command detection and confirmation
+- Forbidden command blocking
+- Cross-platform command adaptation
+- Real-time safety analysis
+- Interactive and single-command modes
 
-### Phase 3 Status: ✅ COMPLETE
+### Phase 3 Status: COMPLETE
 **Ready for Phase 4: A2A Intelligence Layer**
 
 ## [0.2.0] - 2024-12-18 - MCP Server Foundation Complete
@@ -417,12 +456,12 @@ This release marks the completion of the core CLI-MCP integration, creating a fu
 - **Logging System**: Comprehensive logging with configurable levels
 
 ### Testing
-- ✅ MCP server startup and tool registration
-- ✅ Command safety classification
-- ✅ Cross-platform command execution
-- ✅ Security validation and blocking
+- MCP server startup and tool registration
+- Command safety classification
+- Cross-platform command execution
+- Security validation and blocking
 
-### Phase 2 Status: ✅ COMPLETE
+### Phase 2 Status: COMPLETE
 
 ## [0.1.0] - 2024-12-17 - Project Foundation
 
@@ -432,23 +471,23 @@ This release marks the completion of the core CLI-MCP integration, creating a fu
 - Project planning and architecture design
 - Development environment setup
 
-### Phase 1 Status: ✅ COMPLETE
+### Phase 1 Status: COMPLETE
 
 ---
 
 ## Upcoming Releases
 
-### [0.4.0] - A2A Server Implementation (Planned)
-- Natural language processing with OpenAI integration
-- LangGraph for complex agent workflows
-- Command translation from English to terminal commands
-- Context-aware conversation handling
+### [Phase 4C] - Advanced Features (Planned)
+- Parallel execution of independent plan steps
+- Enhanced error recovery mechanisms
+- Performance optimizations and caching
+- Advanced planning intelligence
 
 ### [0.5.0] - Production Features (Planned)
 - Docker containerization
 - Configuration management
 - Enhanced logging and monitoring
-- Performance optimizations
+- Deployment automation
 
 ### [0.6.0] - Advanced Features (Planned)
 - Plugin system for extensibility

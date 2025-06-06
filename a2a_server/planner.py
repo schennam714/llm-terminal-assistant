@@ -157,6 +157,8 @@ class TaskPlanner:
         self.memory = memory_system
         self.active_plans: Dict[str, ExecutionPlan] = {}
         self.plan_counter = 0
+        self.plans_file = "data/execution_plans.json"
+        self._load_plans()
         
     def generate_plan_id(self) -> str:
         """Generate unique plan ID"""
@@ -182,11 +184,23 @@ class TaskPlanner:
         # Add steps to plan
         steps_data = plan_data.get('steps', [])
         for i, step_data in enumerate(steps_data):
+            # Convert dependency indices to actual step IDs
+            raw_dependencies = step_data.get('dependencies', [])
+            actual_dependencies = []
+            for dep in raw_dependencies:
+                if dep.isdigit():
+                    # Convert step index to step ID
+                    dep_index = int(dep)
+                    actual_dependencies.append(f"{plan_id}_step_{dep_index + 1}")
+                else:
+                    # Already a step ID, keep as is
+                    actual_dependencies.append(dep)
+            
             step = PlanStep(
                 step_id=f"{plan_id}_step_{i+1}",
                 command=step_data.get('command', ''),
                 description=step_data.get('description', ''),
-                dependencies=step_data.get('dependencies', []),
+                dependencies=actual_dependencies,
                 rollback_command=step_data.get('rollback_command')
             )
             plan.add_step(step)
@@ -197,6 +211,7 @@ class TaskPlanner:
         
         # Store plan
         self.active_plans[plan_id] = plan
+        self._save_plans()
         
         logger.info(f"Created execution plan {plan_id} with {len(plan.steps)} steps")
         return plan
@@ -292,6 +307,7 @@ CURRENT CONTEXT:"""
         if plan and plan.status in [PlanStatus.PENDING, PlanStatus.IN_PROGRESS]:
             plan.status = PlanStatus.CANCELLED
             plan.end_time = datetime.now()
+            self._save_plans()
             logger.info(f"Cancelled execution plan {plan_id}")
             return True
         return False
@@ -311,13 +327,120 @@ CURRENT CONTEXT:"""
             for plan_id, _ in plans_to_remove:
                 del self.active_plans[plan_id]
                 logger.info(f"Cleaned up old plan {plan_id}")
+            
+            # Save after cleanup
+            self._save_plans()
+    
+    def _save_plans(self):
+        """Save execution plans to file"""
+        import os
+        import json
+        
+        try:
+            # Ensure data directory exists
+            os.makedirs(os.path.dirname(self.plans_file), exist_ok=True)
+            
+            # Convert plans to serializable format
+            plans_data = {}
+            for plan_id, plan in self.active_plans.items():
+                plans_data[plan_id] = plan.to_dict()
+            
+            # Save to file
+            with open(self.plans_file, 'w') as f:
+                json.dump(plans_data, f, indent=2, default=str)  # default=str for datetime serialization
+            
+            logger.debug(f"Saved {len(self.active_plans)} plans to {self.plans_file}")
+            
+        except Exception as e:
+            logger.error(f"Error saving plans: {e}")
+    
+    def _load_plans(self):
+        """Load execution plans from file"""
+        import os
+        import json
+        from datetime import datetime
+        
+        try:
+            if not os.path.exists(self.plans_file):
+                logger.debug(f"Plans file {self.plans_file} does not exist, starting fresh")
+                return
+            
+            with open(self.plans_file, 'r') as f:
+                plans_data = json.load(f)
+            
+            # Convert back to ExecutionPlan objects
+            for plan_id, plan_dict in plans_data.items():
+                plan = self._dict_to_execution_plan(plan_dict)
+                if plan:
+                    self.active_plans[plan_id] = plan
+            
+            logger.info(f"Loaded {len(self.active_plans)} plans from {self.plans_file}")
+            
+        except Exception as e:
+            logger.error(f"Error loading plans: {e}")
+    
+    def _dict_to_execution_plan(self, plan_dict: Dict[str, Any]) -> Optional[ExecutionPlan]:
+        """Convert dictionary back to ExecutionPlan object"""
+        try:
+            from datetime import datetime
+            
+            # Create execution plan
+            plan = ExecutionPlan(
+                plan_id=plan_dict['plan_id'],
+                description=plan_dict['description'],
+                user_intent=plan_dict['user_intent']
+            )
+            
+            # Set properties
+            plan.status = PlanStatus(plan_dict['status'])
+            plan.requires_confirmation = plan_dict.get('requires_confirmation', False)
+            plan.confirmation_message = plan_dict.get('confirmation_message', '')
+            
+            # Parse timestamps
+            if plan_dict.get('created_time'):
+                plan.created_time = datetime.fromisoformat(plan_dict['created_time'].replace('Z', '+00:00'))
+            if plan_dict.get('start_time'):
+                plan.start_time = datetime.fromisoformat(plan_dict['start_time'].replace('Z', '+00:00'))
+            if plan_dict.get('end_time'):
+                plan.end_time = datetime.fromisoformat(plan_dict['end_time'].replace('Z', '+00:00'))
+            
+            # Add steps
+            for step_dict in plan_dict.get('steps', []):
+                step = PlanStep(
+                    step_id=step_dict['step_id'],
+                    command=step_dict['command'],
+                    description=step_dict['description'],
+                    dependencies=step_dict.get('dependencies', []),
+                    rollback_command=step_dict.get('rollback_command')
+                )
+                
+                # Set step properties
+                step.status = StepStatus(step_dict['status'])
+                step.output = step_dict.get('output', '')
+                step.error = step_dict.get('error', '')
+                step.metadata = step_dict.get('metadata', {})
+                
+                # Parse step timestamps
+                if step_dict.get('start_time'):
+                    step.start_time = datetime.fromisoformat(step_dict['start_time'].replace('Z', '+00:00'))
+                if step_dict.get('end_time'):
+                    step.end_time = datetime.fromisoformat(step_dict['end_time'].replace('Z', '+00:00'))
+                
+                plan.add_step(step)
+            
+            return plan
+            
+        except Exception as e:
+            logger.error(f"Error converting dict to ExecutionPlan: {e}")
+            return None
 
 class PlanExecutor:
     """Executes multi-step plans with dependency management and error handling"""
     
-    def __init__(self, mcp_client, memory_system):
+    def __init__(self, mcp_client, memory_system, task_planner):
         self.mcp_client = mcp_client
         self.memory = memory_system
+        self.task_planner = task_planner
         
     async def execute_plan(self, plan: ExecutionPlan, force_execute: bool = False) -> Dict[str, Any]:
         """Execute a multi-step plan"""
@@ -361,6 +484,9 @@ class PlanExecutor:
             
             plan.end_time = datetime.now()
             
+            # Save plan state after execution
+            self.task_planner._save_plans()
+            
             return {
                 "success": plan.status == PlanStatus.COMPLETED,
                 "message": f"Plan {plan.status.value}",
@@ -370,6 +496,7 @@ class PlanExecutor:
         except Exception as e:
             plan.status = PlanStatus.FAILED
             plan.end_time = datetime.now()
+            self.task_planner._save_plans()
             logger.error(f"Error executing plan {plan.plan_id}: {e}")
             
             return {

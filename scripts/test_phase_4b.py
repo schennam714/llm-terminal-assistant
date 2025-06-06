@@ -57,10 +57,10 @@ class Phase4BTestSuite:
         
         if missing_vars:
             console.print(Panel(
-                f" Missing required environment variables: {', '.join(missing_vars)}\n\n"
+                f"❌ Missing required environment variables: {', '.join(missing_vars)}\n\n"
                 "Please set up your .env file with OpenAI API key to run AI tests.\n"
                 "Some tests will be skipped.",
-                title="Environment Warning",
+                title="⚠️  Environment Warning",
                 border_style="yellow"
             ))
             return False
@@ -68,10 +68,10 @@ class Phase4BTestSuite:
         # Initialize A2A server
         try:
             self.a2a_server = A2AServer()
-            console.print("A2A Server with Planning Layer initialized successfully")
+            console.print("✅ A2A Server with Planning Layer initialized successfully")
             return True
         except Exception as e:
-            console.print(f"Failed to initialize A2A Server: {e}")
+            console.print(f"❌ Failed to initialize A2A Server: {e}")
             return False
     
     def add_test_result(self, test_name: str, success: bool, details: str = ""):
@@ -84,7 +84,7 @@ class Phase4BTestSuite:
     
     async def test_planning_components(self):
         """Test planning layer components"""
-        console.print("\nTesting Planning Components...")
+        console.print("\n🧠 Testing Planning Components...")
         
         try:
             # Test 1: TaskPlanner initialization
@@ -191,14 +191,14 @@ class Phase4BTestSuite:
                     if has_expected_commands:
                         self.add_test_result(f"AI Plan Generation {i}", True, 
                                            f"Generated {len(plan.steps)} steps with relevant commands")
-                        console.print(f"    Generated plan with {len(plan.steps)} steps")
+                        console.print(f"    ✅ Generated plan with {len(plan.steps)} steps")
                     else:
                         self.add_test_result(f"AI Plan Generation {i}", False, 
                                            f"Plan lacks expected command types: {plan_commands}")
-                        console.print(f"    Plan missing expected commands: {plan_commands}")
+                        console.print(f"    ❌ Plan missing expected commands: {plan_commands}")
                 else:
                     self.add_test_result(f"AI Plan Generation {i}", False, "No plan generated or empty plan")
-                    console.print(f"    Failed to generate valid plan")
+                    console.print(f"    ❌ Failed to generate valid plan")
                 
                 # Rate limiting delay
                 if i < len(test_cases):
@@ -207,7 +207,7 @@ class Phase4BTestSuite:
                 
             except Exception as e:
                 self.add_test_result(f"AI Plan Generation {i}", False, f"Exception: {str(e)}")
-                console.print(f"    est {i} failed: {e}")
+                console.print(f"    ❌ Test {i} failed: {e}")
         
         console.print("✅ AI plan generation tests completed")
     
@@ -242,14 +242,14 @@ class Phase4BTestSuite:
             if execution_result.get('success'):
                 completed_steps = len([s for s in plan.steps if s.status == StepStatus.COMPLETED])
                 self.add_test_result("Plan Execution", True, f"Executed {completed_steps}/{len(plan.steps)} steps successfully")
-                console.print(f"    Plan executed successfully ({completed_steps}/{len(plan.steps)} steps)")
+                console.print(f"    ✅ Plan executed successfully ({completed_steps}/{len(plan.steps)} steps)")
             else:
                 self.add_test_result("Plan Execution", False, f"Execution failed: {execution_result.get('message')}")
-                console.print(f"    Plan execution failed: {execution_result.get('message')}")
+                console.print(f"    ❌ Plan execution failed: {execution_result.get('message')}")
         
         except Exception as e:
             self.add_test_result("Plan Execution", False, f"Exception: {str(e)}")
-            console.print(f"    Plan execution test failed: {e}")
+            console.print(f"    ❌ Plan execution test failed: {e}")
         
         console.print("✅ Plan execution tests completed")
     
@@ -273,25 +273,25 @@ class Phase4BTestSuite:
             
             if not should_plan_simple and should_plan_complex:
                 self.add_test_result("Planning Decision Logic", True, "Correctly identifies complex tasks for planning")
-                console.print("    Planning decision logic working correctly")
+                console.print("    ✅ Planning decision logic working correctly")
             else:
                 self.add_test_result("Planning Decision Logic", False, 
                                    f"Simple: {should_plan_simple}, Complex: {should_plan_complex}")
-                console.print(f"    Planning decision logic error")
+                console.print(f"    ❌ Planning decision logic error")
             
             # Test plan management
             active_plans = await self.a2a_server.get_active_plans()
             
             if isinstance(active_plans, list):
                 self.add_test_result("Plan Management", True, f"Retrieved {len(active_plans)} active plans")
-                console.print(f"    Plan management working ({len(active_plans)} active plans)")
+                console.print(f"    ✅ Plan management working ({len(active_plans)} active plans)")
             else:
                 self.add_test_result("Plan Management", False, "Failed to retrieve active plans")
-                console.print("    Plan management failed")
+                console.print("    ❌ Plan management failed")
         
         except Exception as e:
             self.add_test_result("Planning Integration", False, f"Exception: {str(e)}")
-            console.print(f"    Planning integration test failed: {e}")
+            console.print(f"    ❌ Planning integration test failed: {e}")
         
         console.print("✅ Planning integration tests completed")
     
@@ -315,13 +315,13 @@ class Phase4BTestSuite:
                 
                 if rollback_result.get('success'):
                     self.add_test_result("Rollback Functionality", True, "Rollback logic working")
-                    console.print("    Rollback functionality operational")
+                    console.print("    ✅ Rollback functionality operational")
                 else:
                     self.add_test_result("Rollback Functionality", False, "Rollback failed")
-                    console.print("    Rollback functionality failed")
+                    console.print("    ❌ Rollback functionality failed")
             else:
                 self.add_test_result("Rollback Functionality", False, "Plan executor not available")
-                console.print("    Plan executor not initialized")
+                console.print("    ❌ Plan executor not initialized")
             
             # Test plan cancellation
             if self.a2a_server:
@@ -329,16 +329,16 @@ class Phase4BTestSuite:
                 
                 if not cancel_result:  # Should return False for non-existent plan
                     self.add_test_result("Plan Cancellation", True, "Correctly handles non-existent plan cancellation")
-                    console.print("    Plan cancellation logic working")
+                    console.print("    ✅ Plan cancellation logic working")
                 else:
                     self.add_test_result("Plan Cancellation", False, "Incorrect cancellation behavior")
-                    console.print("    Plan cancellation logic error")
+                    console.print("    ❌ Plan cancellation logic error")
         
         except Exception as e:
             self.add_test_result("Error Handling", False, f"Exception: {str(e)}")
-            console.print(f"    Error handling test failed: {e}")
+            console.print(f"    ❌ Error handling test failed: {e}")
         
-        console.print("Error handling and rollback tests completed")
+        console.print("✅ Error handling and rollback tests completed")
     
     def display_test_results(self):
         """Display comprehensive test results"""
@@ -359,7 +359,7 @@ class Phase4BTestSuite:
         total = len(self.test_results)
         
         for result in self.test_results:
-            status = "PASS" if result['success'] else "FAIL"
+            status = "✅ PASS" if result['success'] else "❌ FAIL"
             status_style = "green" if result['success'] else "red"
             
             table.add_row(
@@ -378,7 +378,7 @@ class Phase4BTestSuite:
         summary_text = f"""
 **Tests Passed:** {passed}/{total}
 **Success Rate:** {success_rate:.1f}%
-**Phase 4B Status:** {'READY FOR PHASE 4C' if success_rate >= 80 else 'NEEDS FIXES'}
+**Phase 4B Status:** {'✅ READY FOR PHASE 4C' if success_rate >= 80 else '❌ NEEDS FIXES'}
 
 **Planning Layer Features Tested:**
 - Multi-step plan creation and management
@@ -403,27 +403,27 @@ class Phase4BTestSuite:
         ))
         
         if success_rate >= 80:
-            console.print("\nPhase 4B implementation is solid! Ready to proceed to Phase 4C (Advanced Features).")
+            console.print("\n🎉 Phase 4B implementation is solid! Ready to proceed to Phase 4C (Advanced Features).")
         else:
-            console.print("\nSome tests failed. Please review and fix issues before proceeding.")
+            console.print("\n⚠️  Some tests failed. Please review and fix issues before proceeding.")
     
     async def run_all_tests(self):
         """Run the complete test suite (optimized)"""
         setup_success = await self.setup()
         
         if not setup_success:
-            console.print("Setup failed. Running limited tests only.")
+            console.print("❌ Setup failed. Running limited tests only.")
         
         # Run all test categories
         await self.test_planning_components()
         
         if setup_success:
-            console.print(f"\nUsing {self.rate_limit_delay}s delays between API calls to avoid rate limits...")
+            console.print(f"\n⏳ Using {self.rate_limit_delay}s delays between API calls to avoid rate limits...")
             await self.test_ai_plan_generation()
             await self.test_plan_execution()
             await self.test_planning_integration()
         else:
-            console.print("Skipping AI-dependent tests due to setup issues")
+            console.print("⚠️  Skipping AI-dependent tests due to setup issues")
         
         await self.test_error_handling_and_rollback()
         

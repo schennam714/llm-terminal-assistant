@@ -53,19 +53,22 @@ class EnhancedTerminalClient:
     async def initialize(self):
         """Initialize MCP client and A2A server"""
         try:
-            console.print("Initializing Enhanced Terminal Client...")
+            console.print("🔄 Initializing Enhanced Terminal Client...")
             
             # Initialize MCP client
             self.mcp_client = await get_mcp_client()
-            console.print("Connected to MCP server")
+            console.print("✅ Connected to MCP server")
             
             # Initialize A2A server
             self.a2a_server = A2AServer()
-            console.print("A2A server with Planning Layer initialized")
+            
+            # Ensure A2A server has MCP connection
+            await self.a2a_server.ensure_mcp_connection()
+            console.print("✅ A2A server with Planning Layer initialized")
             
             return True
         except Exception as e:
-            console.print(f"Initialization failed: {e}")
+            console.print(f"❌ Initialization failed: {e}")
             return False
 
     def display_welcome(self):
@@ -74,11 +77,11 @@ class EnhancedTerminalClient:
 # 🚀 Enhanced LLM Terminal Assistant - Phase 4B
 
 **New Features:**
-- **Multi-Step Planning**: Complex tasks broken into sequential steps
-- **Task Decomposition**: Automatic dependency management
-- **Progress Tracking**: Real-time execution monitoring
-- **Rollback Support**: Undo failed operations
-- **Smart Planning**: AI determines when to use multi-step execution
+- 🧠 **Multi-Step Planning**: Complex tasks broken into sequential steps
+- 📋 **Task Decomposition**: Automatic dependency management
+- 🔄 **Progress Tracking**: Real-time execution monitoring
+- ↩️  **Rollback Support**: Undo failed operations
+- 🎯 **Smart Planning**: AI determines when to use multi-step execution
 
 **Available Commands:**
 - `natural "your request"` - Natural language processing with planning
@@ -93,8 +96,8 @@ class EnhancedTerminalClient:
 - `help` - Show all commands
 - `exit` - Exit the terminal
 
-**Planning Mode:** {'Enabled' if self.planning_enabled else 'Disabled'}
-**Natural Language Mode:** {'Active' if self.natural_language_mode else 'Inactive'}
+**Planning Mode:** {'🟢 Enabled' if self.planning_enabled else '🔴 Disabled'}
+**Natural Language Mode:** {'🟢 Active' if self.natural_language_mode else '🔴 Inactive'}
         """
         
         self.console.print(Panel(
@@ -123,7 +126,7 @@ class EnhancedTerminalClient:
                     border_style="green" if force_result.startswith("✅") else "red"
                 ))
             else:
-                self.console.print("Command cancelled by user", style="red")
+                self.console.print("❌ Command cancelled by user", style="red")
             return
         
         elif result.startswith("✅"):
@@ -173,7 +176,7 @@ class EnhancedTerminalClient:
         # Handle confirmation requirement
         if result.get('requires_confirmation'):
             self.console.print(Panel(
-                "These commands require confirmation to execute.\nUse `--force` flag or confirm when prompted.",
+                "⚠️  These commands require confirmation to execute.\nUse `--force` flag or confirm when prompted.",
                 title="Confirmation Required",
                 border_style="yellow"
             ))
@@ -236,7 +239,7 @@ class EnhancedTerminalClient:
             except Exception as e:
                 progress.remove_task(task)
                 self.console.print(Panel(
-                    f"Error processing natural language request:\n{str(e)}",
+                    f"❌ Error processing natural language request:\n{str(e)}",
                     title="AI Error",
                     border_style="red"
                 ))
@@ -263,11 +266,12 @@ class EnhancedTerminalClient:
             ))
             
         except Exception as e:
-            self.console.print(f"Error getting session info: {str(e)}", style="red")
+            self.console.print(f"❌ Error getting session info: {str(e)}", style="red")
     
     async def execute_command_with_force(self, command: str) -> str:
         """Execute a dangerous command with force_execute=True"""
-        await self.ensure_mcp_connection()
+        if not self.mcp_client:
+            await self.initialize()
         
         self.console.print(f"🔓 Executing dangerous command with confirmation: {command}", style="yellow")
         
@@ -281,11 +285,12 @@ class EnhancedTerminalClient:
                 output += " (no output)"
             return output
         else:
-            return f"Command failed:\n{result['stderr']}"
+            return f"❌ Command failed:\n{result['stderr']}"
     
     async def analyze_command_safety(self, command: str):
         """Analyze command safety without executing"""
-        await self.ensure_mcp_connection()
+        if not self.mcp_client:
+            await self.initialize()
         
         with Progress(
             SpinnerColumn(),
@@ -319,7 +324,7 @@ class EnhancedTerminalClient:
         elif analysis_result['requires_confirmation']:
             analysis += f"\n⚠️  This command will require user confirmation."
         else:
-            analysis += f"\nThis command is blocked for safety."
+            analysis += f"\n❌ This command is blocked for safety."
         
         self.console.print(Panel(
             analysis,
@@ -340,7 +345,7 @@ class EnhancedTerminalClient:
         
         for i, cmd_info in enumerate(self.command_history[-10:], 1):  # Show last 10
             cmd_type = cmd_info.get('type', 'direct')
-            type_display = "AI" if cmd_type == 'natural_language' else "Direct"
+            type_display = "🧠 AI" if cmd_type == 'natural_language' else "⚡ Direct"
             
             table.add_row(
                 str(i),
@@ -353,14 +358,14 @@ class EnhancedTerminalClient:
     
     def show_help(self):
         help_text = """
-## Help & Commands
+## 🆘 Help & Commands
 
 ### Basic Usage
 - Simply type any terminal command (e.g., `ls`, `pwd`, `cat file.txt`)
 - The assistant will execute safe commands immediately
 - Dangerous commands will ask for confirmation
 
-### Natural Language Mode (NEW!)
+### 🧠 Natural Language Mode (NEW!)
 - `natural "list all Python files"` - Use AI to translate natural language
 - `toggle-mode` - Switch between direct and natural language modes
 - When in natural mode, just type what you want: `"show me the largest files"`
@@ -389,9 +394,9 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
 ```
 
 ### Security Levels
-- Safe: ls, pwd, cat, git status, etc.
-- Confirmation Required: rm, sudo, chmod, etc.
-- Blocked: rm -rf /, format c:, fork bombs, etc.
+- 🟢 **Safe**: ls, pwd, cat, git status, etc.
+- 🟡 **Confirmation Required**: rm, sudo, chmod, etc.
+- 🔴 **Blocked**: rm -rf /, format c:, fork bombs, etc.
 
 ### 🧠 AI Features
 - **Context Memory**: Remembers previous commands and files
@@ -401,7 +406,7 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
         
         self.console.print(Panel(
             Markdown(help_text),
-            title="Help",
+            title="🆘 Help",
             border_style="blue"
         ))
     
@@ -410,16 +415,16 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
         self.display_welcome()
         
         # Show current mode
-        mode_text = "Natural Language" if self.natural_language_mode else "Direct Command"
+        mode_text = "🧠 Natural Language" if self.natural_language_mode else "⚡ Direct Command"
         self.console.print(f"Current mode: {mode_text}", style="dim")
         
         while True:
             try:
                 # Dynamic prompt based on mode
                 if self.natural_language_mode:
-                    prompt_text = "\n[bold blue]AI Assistant[/bold blue]"
+                    prompt_text = "\n[bold blue]🧠 AI Assistant[/bold blue]"
                 else:
-                    prompt_text = "\n[bold blue]Terminal Assistant[/bold blue]"
+                    prompt_text = "\n[bold blue]🤖 Terminal Assistant[/bold blue]"
                 
                 command = Prompt.ask(prompt_text, default="").strip()
                 
@@ -428,7 +433,7 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                 
                 # Handle special commands
                 if command.lower() in ['quit', 'exit']:
-                    self.console.print("Goodbye! Thanks for using Terminal Assistant!", style="green")
+                    self.console.print("👋 Goodbye! Thanks for using Terminal Assistant!", style="green")
                     break
                 
                 elif command.lower() == 'help':
@@ -445,7 +450,7 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                 
                 elif command.lower() == 'toggle-mode':
                     self.natural_language_mode = not self.natural_language_mode
-                    mode_text = "Natural Language" if self.natural_language_mode else "Direct Command"
+                    mode_text = "🧠 Natural Language" if self.natural_language_mode else "⚡ Direct Command"
                     self.console.print(f"Switched to: {mode_text}", style="green")
                     continue
                 
@@ -458,7 +463,7 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                     if cmd_to_analyze:
                         await self.analyze_command_safety(cmd_to_analyze)
                     else:
-                        self.console.print("Please provide a command to analyze", style="red")
+                        self.console.print("❌ Please provide a command to analyze", style="red")
                     continue
                 
                 elif command.lower().startswith('natural '):
@@ -467,55 +472,32 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                     if nl_command:
                         await self.process_natural_language_command(nl_command)
                     else:
-                        self.console.print("Please provide a natural language request", style="red")
+                        self.console.print("❌ Please provide a natural language request", style="red")
                     continue
                 
-                # Execute based on current mode
+                # Execute based on current mode or use unified command processing
                 self.session_commands += 1
                 
-                if self.natural_language_mode:
-                    # Process as natural language
-                    await self.process_natural_language_command(command)
-                else:
-                    # Process as direct command (existing logic)
-                    with Progress(
-                        SpinnerColumn(),
-                        TextColumn("[progress.description]{task.description}"),
-                        console=self.console
-                    ) as progress:
-                        task = progress.add_task("Executing command...", total=None)
-                        
-                        result = await self.simulate_command_execution(command)
-                        
-                        progress.remove_task(task)
-                    
-                    # Display results
-                    await self.display_command_result(result, command)
-                    
-                    # Add to history
-                    self.command_history.append({
-                        'command': command,
-                        'status': 'Success' if result.startswith('✅') else 'Failed',
-                        'session_id': self.session_commands,
-                        'type': 'direct'
-                    })
+                # Use the unified process_command method that handles all command types
+                await self.process_command(command)
                 
             except KeyboardInterrupt:
-                self.console.print("\n\nInterrupted by user. Goodbye!", style="yellow")
+                self.console.print("\n\n👋 Interrupted by user. Goodbye!", style="yellow")
                 break
             except Exception as e:
-                self.console.print(f"Unexpected error: {str(e)}", style="red")
+                self.console.print(f"❌ Unexpected error: {str(e)}", style="red")
     
     async def simulate_command_execution(self, command: str) -> str:
         """Execute command via MCP server (replacing simulation)"""
-        await self.ensure_mcp_connection()
+        if not self.mcp_client:
+            await self.initialize()
         
         # Get real command execution from MCP server
         result = await self.mcp_client.execute_command(command, force_execute=False)
         
         if result['requires_confirmation']:
             # Format confirmation request
-            confirmation_text = f"DANGEROUS COMMAND DETECTED\n"
+            confirmation_text = f"⚠️  DANGEROUS COMMAND DETECTED\n"
             confirmation_text += f"Command: {command}\n"
             confirmation_text += f"Risk: {result['metadata']['reason']}\n"
             
@@ -528,7 +510,7 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
             return confirmation_text
         
         elif result['success']:
-            output = f"Command executed successfully"
+            output = f"✅ Command executed successfully"
             if result['stdout']:
                 output += f":\n{result['stdout']}"
             else:
@@ -536,19 +518,21 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
             return output
         
         else:
-            return f"Command failed:\n{result['stderr']}"
+            return f"❌ Command failed:\n{result['stderr']}"
 
     async def handle_plan_command(self, user_input: str):
         """Handle plan command for forced multi-step planning"""
         if not self.a2a_server:
-            self.console.print("A2A server not initialized")
+            self.console.print("❌ A2A server not initialized")
             return
         
         # Extract the task from the command
         if user_input.startswith('plan "') and user_input.endswith('"'):
             task = user_input[6:-1]  # Remove 'plan "' and '"'
+        elif user_input.startswith("plan '") and user_input.endswith("'"):
+            task = user_input[6:-1]  # Remove "plan '" and "'"
         else:
-            self.console.print("Invalid plan command format. Use: plan \"your complex task\"")
+            self.console.print("❌ Invalid plan command format. Use: plan \"your complex task\" or plan 'your complex task'")
             return
         
         self.console.print(f"�� Creating execution plan for: {task}")
@@ -563,7 +547,7 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                 
                 # Force planning mode
                 result = await self.a2a_server.process_request_with_planning(
-                    task, force_execute=False, use_planning=True
+                    task, force_execute=False, use_planning=True, force_planning=True
                 )
                 progress.remove_task(task_progress)
             
@@ -573,7 +557,7 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                 await self._display_plan_result(result)
                 
         except Exception as e:
-            self.console.print(f"Error creating plan: {e}")
+            self.console.print(f"❌ Error creating plan: {e}")
     
     async def _handle_plan_confirmation(self, result: Dict[str, Any]):
         """Handle plan confirmation dialog"""
@@ -592,15 +576,16 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                 execution_result = await self.a2a_server.process_request_with_planning(
                     result.get('plan', {}).get('user_intent', ''),
                     force_execute=True,
-                    use_planning=True
+                    use_planning=True,
+                    force_planning=True
                 )
                 
                 await self._display_plan_result(execution_result)
                 
             except Exception as e:
-                self.console.print(f"Error executing plan: {e}")
+                self.console.print(f"❌ Error executing plan: {e}")
         else:
-            self.console.print("Plan execution cancelled")
+            self.console.print("⏸️  Plan execution cancelled")
     
     def _display_plan_details(self, plan_data: Dict[str, Any]):
         """Display detailed plan information"""
@@ -657,25 +642,25 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
             failed_commands = execution_summary.get('failed_commands', [])
             
             if successful_commands:
-                self.console.print("\nSuccessful Commands:")
+                self.console.print("\n✅ Successful Commands:")
                 for cmd in successful_commands:
                     self.console.print(f"  • {cmd}")
             
             if failed_commands:
-                self.console.print("\nFailed Commands:")
+                self.console.print("\n❌ Failed Commands:")
                 for cmd in failed_commands:
                     self.console.print(f"  • {cmd}")
         else:
             # Regular result display
             if result.get('success'):
-                self.console.print("Command executed successfully")
+                self.console.print("✅ Command executed successfully")
             else:
-                self.console.print(f"Command failed: {result.get('message', 'Unknown error')}")
+                self.console.print(f"❌ Command failed: {result.get('message', 'Unknown error')}")
     
     async def handle_plans_command(self):
         """Display all active plans"""
         if not self.a2a_server:
-            self.console.print("A2A server not initialized")
+            self.console.print("❌ A2A server not initialized")
             return
         
         try:
@@ -702,48 +687,48 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                 self.console.print(plan_info)
                 
         except Exception as e:
-            self.console.print(f"Error retrieving plans: {e}")
+            self.console.print(f"❌ Error retrieving plans: {e}")
     
     async def handle_plan_status_command(self, plan_id: str):
         """Display detailed status of a specific plan"""
         if not self.a2a_server:
-            self.console.print("A2A server not initialized")
+            self.console.print("❌ A2A server not initialized")
             return
         
         try:
             plan_data = await self.a2a_server.get_plan_status(plan_id)
             
             if not plan_data:
-                self.console.print(f"Plan '{plan_id}' not found")
+                self.console.print(f"❌ Plan '{plan_id}' not found")
                 return
             
             self.console.print(f"📋 Plan Status: {plan_id}")
             self._display_plan_details(plan_data)
             
         except Exception as e:
-            self.console.print(f"Error retrieving plan status: {e}")
+            self.console.print(f"❌ Error retrieving plan status: {e}")
     
     async def handle_cancel_plan_command(self, plan_id: str):
         """Cancel a running plan"""
         if not self.a2a_server:
-            self.console.print("A2A server not initialized")
+            self.console.print("❌ A2A server not initialized")
             return
         
         try:
             success = await self.a2a_server.cancel_plan(plan_id)
             
             if success:
-                self.console.print(f"Plan '{plan_id}' cancelled successfully")
+                self.console.print(f"✅ Plan '{plan_id}' cancelled successfully")
             else:
-                self.console.print(f"Failed to cancel plan '{plan_id}' (may not exist or already completed)")
+                self.console.print(f"❌ Failed to cancel plan '{plan_id}' (may not exist or already completed)")
                 
         except Exception as e:
-            self.console.print(f"Error cancelling plan: {e}")
+            self.console.print(f"❌ Error cancelling plan: {e}")
     
     async def handle_rollback_plan_command(self, plan_id: str):
         """Rollback a failed plan"""
         if not self.a2a_server:
-            self.console.print("A2A server not initialized")
+            self.console.print("❌ A2A server not initialized")
             return
         
         try:
@@ -758,18 +743,18 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
                 if rollback_results:
                     self.console.print("\n🔄 Rollback Details:")
                     for rollback in rollback_results:
-                        status = "✅" if rollback.get('success') else "❌" 
+                        status = "✅" if rollback.get('success') else "❌"
                         self.console.print(f"  {status} {rollback.get('rollback_command', 'Unknown command')}")
             else:
-                self.console.print(f"Rollback failed: {result.get('message', 'Unknown error')}")
+                self.console.print(f"❌ Rollback failed: {result.get('message', 'Unknown error')}")
                 
         except Exception as e:
-            self.console.print(f"Error during rollback: {e}")
+            self.console.print(f"❌ Error during rollback: {e}")
     
     def handle_toggle_planning_command(self):
         """Toggle automatic planning mode"""
         self.planning_enabled = not self.planning_enabled
-        status = "Enabled" if self.planning_enabled else "Disabled"
+        status = "🟢 Enabled" if self.planning_enabled else "🔴 Disabled"
         self.console.print(f"🎯 Automatic Planning: {status}")
 
     async def process_command(self, user_input: str):
@@ -780,7 +765,7 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
             return
         
         # Handle new planning commands
-        if user_input.startswith('plan "'):
+        if user_input.startswith('plan "') or user_input.startswith("plan '"):
             await self.handle_plan_command(user_input)
         elif user_input == 'plans':
             await self.handle_plans_command()
@@ -815,12 +800,46 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
             else:
                 await self.handle_direct_command(user_input)
 
+    async def handle_direct_command(self, command: str):
+        """Handle direct command execution with progress tracking"""
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=self.console
+        ) as progress:
+            task = progress.add_task("Executing command...", total=None)
+            
+            result = await self.simulate_command_execution(command)
+            
+            progress.remove_task(task)
+        
+        # Display results
+        await self.display_command_result(result, command)
+        
+        # Add to history
+        self.command_history.append({
+            'command': command,
+            'status': 'Success' if result.startswith('✅') else 'Failed',
+            'session_id': self.session_commands,
+            'type': 'direct'
+        })
+
+    async def handle_exit_command(self):
+        """Handle exit command"""
+        self.console.print("👋 Goodbye! Thanks for using Terminal Assistant!", style="green")
+        import sys
+        sys.exit(0)
+
 # CLI Commands
 @app.command()
 def interactive():
     """Start interactive terminal session with AI capabilities"""
-    client = EnhancedTerminalClient()
-    asyncio.run(client.run_interactive_session())
+    async def _interactive():
+        client = EnhancedTerminalClient()
+        await client.initialize()
+        await client.run_interactive_session()
+    
+    asyncio.run(_interactive())
 
 @app.command()
 def execute(
@@ -830,7 +849,7 @@ def execute(
     """Execute a single command"""
     async def _execute():
         client = EnhancedTerminalClient()
-        await client.ensure_mcp_connection()
+        await client.initialize()
         
         with Progress(
             SpinnerColumn(),
@@ -868,11 +887,11 @@ def execute(
                 output += f":\n{result['stdout']}"
             else:
                 output += " (no output)"
-            console.print(Panel(output, title="Success", border_style="green"))
+            console.print(Panel(output, title="✅ Success", border_style="green"))
         else:
             console.print(Panel(
-                f"Command failed:\n{result['stderr']}", 
-                title="Error", 
+                f"❌ Command failed:\n{result['stderr']}", 
+                title="❌ Error", 
                 border_style="red"
             ))
     
@@ -886,6 +905,7 @@ def natural(
     """Process natural language request using AI"""
     async def _natural():
         client = EnhancedTerminalClient()
+        await client.initialize()
         await client.process_natural_language_command(request, force_execute=force)
     
     asyncio.run(_natural())
@@ -895,6 +915,7 @@ def analyze(command: str = typer.Argument(..., help="Command to analyze")):
     """Analyze command safety without executing"""
     async def _analyze():
         client = EnhancedTerminalClient()
+        await client.initialize()
         await client.analyze_command_safety(command)
     
     asyncio.run(_analyze())
@@ -904,6 +925,7 @@ def session_info():
     """Show current AI session information"""
     async def _session_info():
         client = EnhancedTerminalClient()
+        await client.initialize()
         await client.show_session_info()
     
     asyncio.run(_session_info())

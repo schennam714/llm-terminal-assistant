@@ -61,7 +61,7 @@ class A2AServer:
         """Ensure MCP client is connected"""
         if self.mcp_client is None:
             self.mcp_client = await get_mcp_client()
-            self.plan_executor = PlanExecutor(self.mcp_client, self.memory)
+            self.plan_executor = PlanExecutor(self.mcp_client, self.memory, self.task_planner)
             logger.info("Connected to MCP server and initialized Plan Executor")
     
     def build_system_prompt(self) -> str:
@@ -319,14 +319,14 @@ CURRENT CONTEXT:"""
         """Get current session information"""
         return self.memory.get_session_summary()
 
-    async def process_request_with_planning(self, user_input: str, force_execute: bool = False, use_planning: bool = True) -> Dict[str, Any]:
+    async def process_request_with_planning(self, user_input: str, force_execute: bool = False, use_planning: bool = True, force_planning: bool = False) -> Dict[str, Any]:
         """Enhanced request processing with multi-step planning capability"""
         logger.info(f"Processing request with planning: {user_input}")
         
         await self.ensure_mcp_connection()
         
         # Determine if this request needs multi-step planning
-        if use_planning and await self._should_use_planning(user_input):
+        if force_planning or (use_planning and await self._should_use_planning(user_input)):
             return await self._process_with_planning(user_input, force_execute)
         else:
             # Fall back to single-step processing

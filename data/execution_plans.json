@@ -1,0 +1,363 @@
+{
+  "plan_20250606_192818_1": {
+    "plan_id": "plan_20250606_192818_1",
+    "description": "This plan creates a new folder named 'TESTING' in the current working directory and adds a Python file that contains a simple program to add two numbers.",
+    "user_intent": "create a folder called TESTING that has a python file in it that adds two numbers",
+    "status": "pending",
+    "created_time": "2025-06-06T19:28:18.012730",
+    "start_time": null,
+    "end_time": null,
+    "requires_confirmation": true,
+    "confirmation_message": "Do you want to proceed with creating the TESTING folder and the Python file?",
+    "steps": [
+      {
+        "step_id": "plan_20250606_192818_1_step_1",
+        "command": "mkdir TESTING",
+        "description": "Creates a new directory called 'TESTING' in the current working directory.",
+        "dependencies": [],
+        "rollback_command": "rmdir TESTING",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      },
+      {
+        "step_id": "plan_20250606_192818_1_step_2",
+        "command": "echo 'def add_numbers(a, b):\\n    return a + b\\n\\nif __name__ == \"__main__\":\\n    print(add_numbers(3, 5))' > TESTING/add_numbers.py",
+        "description": "Creates a Python file named 'add_numbers.py' inside the 'TESTING' directory that defines a function to add two numbers and prints the result.",
+        "dependencies": [
+          "0"
+        ],
+        "rollback_command": "rm TESTING/add_numbers.py",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      }
+    ],
+    "progress": {
+      "total_steps": 2,
+      "completed_steps": 0,
+      "failed_steps": 0,
+      "progress_percentage": 0.0,
+      "status": "pending"
+    },
+    "metadata": {}
+  },
+  "plan_20250606_192841_2": {
+    "plan_id": "plan_20250606_192841_2",
+    "description": "This execution plan creates a new folder named TESTING and adds a Python file that contains a simple script to add two numbers.",
+    "user_intent": "create a folder called TESTING that has a python file in it that adds two numbers",
+    "status": "failed",
+    "created_time": "2025-06-06T19:28:41.348061",
+    "start_time": "2025-06-06T19:28:41.350395",
+    "end_time": "2025-06-06T19:28:41.370424",
+    "requires_confirmation": false,
+    "confirmation_message": "",
+    "steps": [
+      {
+        "step_id": "plan_20250606_192841_2_step_1",
+        "command": "mkdir TESTING",
+        "description": "Creates a new directory called TESTING in the current working directory.",
+        "dependencies": [],
+        "rollback_command": "rmdir TESTING",
+        "status": "completed",
+        "start_time": "2025-06-06T19:28:41.350523",
+        "end_time": "2025-06-06T19:28:41.370305",
+        "output": "",
+        "error": "",
+        "metadata": {
+          "risk_level": "safe",
+          "reason": "Command appears safe",
+          "suggestions": [],
+          "adapted_command": "mkdir TESTING",
+          "original_command": "mkdir TESTING"
+        }
+      },
+      {
+        "step_id": "plan_20250606_192841_2_step_2",
+        "command": "echo 'def add_numbers(a, b):\\n    return a + b\\n\\nif __name__ == \"__main__\":\\n    print(add_numbers(5, 3))' > TESTING/add_numbers.py",
+        "description": "Creates a Python file named add_numbers.py in the TESTING directory with a function to add two numbers.",
+        "dependencies": [
+          "0"
+        ],
+        "rollback_command": "rm TESTING/add_numbers.py",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      }
+    ],
+    "progress": {
+      "total_steps": 2,
+      "completed_steps": 1,
+      "failed_steps": 0,
+      "progress_percentage": 50.0,
+      "status": "failed"
+    },
+    "metadata": {}
+  },
+  "plan_20250606_193030_3": {
+    "plan_id": "plan_20250606_193030_3",
+    "description": "This plan creates a new directory named 'DockerProject' and adds a Dockerfile within it.",
+    "user_intent": "create a directory with a dockerfile in it",
+    "status": "pending",
+    "created_time": "2025-06-06T19:30:30.772090",
+    "start_time": null,
+    "end_time": null,
+    "requires_confirmation": true,
+    "confirmation_message": "Do you want to proceed with creating the 'DockerProject' directory and adding a Dockerfile?",
+    "steps": [
+      {
+        "step_id": "plan_20250606_193030_3_step_1",
+        "command": "mkdir DockerProject",
+        "description": "Creates a new directory named 'DockerProject'.",
+        "dependencies": [],
+        "rollback_command": "rmdir DockerProject",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      },
+      {
+        "step_id": "plan_20250606_193030_3_step_2",
+        "command": "touch DockerProject/Dockerfile",
+        "description": "Creates an empty Dockerfile inside the 'DockerProject' directory.",
+        "dependencies": [
+          "0"
+        ],
+        "rollback_command": "rm DockerProject/Dockerfile",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      },
+      {
+        "step_id": "plan_20250606_193030_3_step_3",
+        "command": "echo 'FROM ubuntu:latest' > DockerProject/Dockerfile",
+        "description": "Adds a basic instruction to the Dockerfile to use the latest Ubuntu image.",
+        "dependencies": [
+          "1"
+        ],
+        "rollback_command": "echo '' > DockerProject/Dockerfile",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      }
+    ],
+    "progress": {
+      "total_steps": 3,
+      "completed_steps": 0,
+      "failed_steps": 0,
+      "progress_percentage": 0.0,
+      "status": "pending"
+    },
+    "metadata": {}
+  },
+  "plan_20250606_193037_4": {
+    "plan_id": "plan_20250606_193037_4",
+    "description": "This plan outlines the steps to create a new directory and place a Dockerfile within it.",
+    "user_intent": "create a directory with a dockerfile in it",
+    "status": "failed",
+    "created_time": "2025-06-06T19:30:37.346114",
+    "start_time": "2025-06-06T19:30:37.349536",
+    "end_time": "2025-06-06T19:30:37.370339",
+    "requires_confirmation": true,
+    "confirmation_message": "Do you want to proceed with creating a new directory and a Dockerfile in it?",
+    "steps": [
+      {
+        "step_id": "plan_20250606_193037_4_step_1",
+        "command": "mkdir my_docker_directory",
+        "description": "Creates a new directory named 'my_docker_directory'.",
+        "dependencies": [],
+        "rollback_command": "rmdir my_docker_directory",
+        "status": "completed",
+        "start_time": "2025-06-06T19:30:37.349674",
+        "end_time": "2025-06-06T19:30:37.370223",
+        "output": "",
+        "error": "",
+        "metadata": {
+          "risk_level": "safe",
+          "reason": "Command appears safe",
+          "suggestions": [],
+          "adapted_command": "mkdir my_docker_directory",
+          "original_command": "mkdir my_docker_directory"
+        }
+      },
+      {
+        "step_id": "plan_20250606_193037_4_step_2",
+        "command": "touch my_docker_directory/Dockerfile",
+        "description": "Creates an empty Dockerfile inside the newly created directory.",
+        "dependencies": [
+          "0"
+        ],
+        "rollback_command": "rm my_docker_directory/Dockerfile",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      },
+      {
+        "step_id": "plan_20250606_193037_4_step_3",
+        "command": "echo 'FROM ubuntu:latest' > my_docker_directory/Dockerfile",
+        "description": "Adds a basic instruction to the Dockerfile to use the latest Ubuntu image.",
+        "dependencies": [
+          "1"
+        ],
+        "rollback_command": "echo '' > my_docker_directory/Dockerfile",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      }
+    ],
+    "progress": {
+      "total_steps": 3,
+      "completed_steps": 1,
+      "failed_steps": 0,
+      "progress_percentage": 33.33333333333333,
+      "status": "failed"
+    },
+    "metadata": {}
+  },
+  "plan_20250606_193636_1": {
+    "plan_id": "plan_20250606_193636_1",
+    "description": "This plan creates a 'testing' folder containing two Python files that perform different mathematical operations.",
+    "user_intent": "create a testing folder with two python files that do different mathematical operations",
+    "status": "pending",
+    "created_time": "2025-06-06T19:36:36.786668",
+    "start_time": null,
+    "end_time": null,
+    "requires_confirmation": true,
+    "confirmation_message": "This will create a 'testing' folder with two Python files. Do you want to proceed?",
+    "steps": [
+      {
+        "step_id": "plan_20250606_193636_1_step_1",
+        "command": "mkdir /Users/shreyaschennamaraja/Desktop/llm-terminal-assistant/TESTING",
+        "description": "Creates a new directory named 'TESTING' for storing the Python files.",
+        "dependencies": [],
+        "rollback_command": "rmdir /Users/shreyaschennamaraja/Desktop/llm-terminal-assistant/TESTING",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      },
+      {
+        "step_id": "plan_20250606_193636_1_step_2",
+        "command": "echo 'def add(a, b):\\n    return a + b' > /Users/shreyaschennamaraja/Desktop/llm-terminal-assistant/TESTING/addition.py",
+        "description": "Creates a Python file 'addition.py' that defines a function to add two numbers.",
+        "dependencies": [
+          "plan_20250606_193636_1_step_1"
+        ],
+        "rollback_command": "rm /Users/shreyaschennamaraja/Desktop/llm-terminal-assistant/TESTING/addition.py",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      },
+      {
+        "step_id": "plan_20250606_193636_1_step_3",
+        "command": "echo 'def multiply(a, b):\\n    return a * b' > /Users/shreyaschennamaraja/Desktop/llm-terminal-assistant/TESTING/multiplication.py",
+        "description": "Creates a Python file 'multiplication.py' that defines a function to multiply two numbers.",
+        "dependencies": [
+          "plan_20250606_193636_1_step_1"
+        ],
+        "rollback_command": "rm /Users/shreyaschennamaraja/Desktop/llm-terminal-assistant/TESTING/multiplication.py",
+        "status": "pending",
+        "start_time": null,
+        "end_time": null,
+        "output": "",
+        "error": "",
+        "metadata": {}
+      }
+    ],
+    "progress": {
+      "total_steps": 3,
+      "completed_steps": 0,
+      "failed_steps": 0,
+      "progress_percentage": 0.0,
+      "status": "pending"
+    },
+    "metadata": {}
+  },
+  "plan_20250606_193643_2": {
+    "plan_id": "plan_20250606_193643_2",
+    "description": "This execution plan creates a testing folder containing two Python files that perform different mathematical operations.",
+    "user_intent": "create a testing folder with two python files that do different mathematical operations",
+    "status": "failed",
+    "created_time": "2025-06-06T19:36:43.819112",
+    "start_time": "2025-06-06T19:36:43.820425",
+    "end_time": "2025-06-06T19:36:43.845057",
+    "requires_confirmation": true,
+    "confirmation_message": "This plan will create two Python files in the TESTING directory. Do you want to proceed?",
+    "steps": [
+      {
+        "step_id": "plan_20250606_193643_2_step_1",
+        "command": "echo \"def add(a, b): return a + b\" > TESTING/addition.py",
+        "description": "Creates a Python file named addition.py that defines a function to add two numbers.",
+        "dependencies": [],
+        "rollback_command": "rm TESTING/addition.py",
+        "status": "failed",
+        "start_time": "2025-06-06T19:36:43.820524",
+        "end_time": "2025-06-06T19:36:43.833199",
+        "output": "",
+        "error": "/bin/sh: TESTING/addition.py: No such file or directory",
+        "metadata": {
+          "risk_level": "safe",
+          "reason": "Command is in safe list",
+          "suggestions": [],
+          "adapted_command": "echo \"def add(a, b): return a + b\" > TESTING/addition.py",
+          "original_command": "echo \"def add(a, b): return a + b\" > TESTING/addition.py"
+        }
+      },
+      {
+        "step_id": "plan_20250606_193643_2_step_2",
+        "command": "echo \"def multiply(a, b): return a * b\" > TESTING/multiplication.py",
+        "description": "Creates a Python file named multiplication.py that defines a function to multiply two numbers.",
+        "dependencies": [],
+        "rollback_command": "rm TESTING/multiplication.py",
+        "status": "failed",
+        "start_time": "2025-06-06T19:36:43.833299",
+        "end_time": "2025-06-06T19:36:43.844937",
+        "output": "",
+        "error": "/bin/sh: TESTING/multiplication.py: No such file or directory",
+        "metadata": {
+          "risk_level": "safe",
+          "reason": "Command is in safe list",
+          "suggestions": [],
+          "adapted_command": "echo \"def multiply(a, b): return a * b\" > TESTING/multiplication.py",
+          "original_command": "echo \"def multiply(a, b): return a * b\" > TESTING/multiplication.py"
+        }
+      }
+    ],
+    "progress": {
+      "total_steps": 2,
+      "completed_steps": 0,
+      "failed_steps": 2,
+      "progress_percentage": 0.0,
+      "status": "failed"
+    },
+    "metadata": {}
+  }
+}

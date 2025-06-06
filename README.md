@@ -1,17 +1,17 @@
-# 🚀 LLM Terminal Assistant - Phase 4B Complete
+# LLM Terminal Assistant - Phase 4B Complete
 
 An intelligent terminal assistant powered by OpenAI's GPT models, featuring **multi-step planning**, natural language processing, and comprehensive security. This project demonstrates modern software architecture with A2A (Agent-to-Agent) protocol integration and MCP (Model Context Protocol) compliance.
 
-## 🎯 **Phase 4B: Planning Layer - COMPLETE ✅**
+## Phase 4B: Planning Layer - COMPLETE
 
-### **🧠 Multi-Step Planning Engine**
+### Multi-Step Planning Engine
 - **AI-Powered Task Decomposition**: Complex tasks automatically broken into sequential steps
 - **Dependency Management**: Automatic resolution of step dependencies and execution order
 - **Progress Tracking**: Real-time monitoring with detailed execution metrics
 - **Error Recovery**: Comprehensive rollback system for failed operations
 - **Smart Planning**: AI determines when to use multi-step vs single-step execution
 
-### **📋 Advanced Planning Features**
+### Advanced Planning Features
 ```bash
 # Complex task decomposition
 plan "setup a new Python project with virtual environment and git"
@@ -26,15 +26,16 @@ rollback-plan <plan_id>  # Undo failed operations with rollback commands
 toggle-planning          # Enable/disable automatic planning mode
 ```
 
-### **🔄 Execution Coordination**
+### Execution Coordination
 - **Dependency Resolution**: Steps execute only when dependencies are satisfied
-- **Parallel Execution**: Ready steps can execute simultaneously (future enhancement)
+- **Plan Persistence**: All execution plans are saved and persist between sessions
+- **Cross-Session Access**: Plans created in one terminal session are available in another
 - **Progress Visualization**: Rich terminal progress bars and execution summaries
 - **Rollback Support**: Automatic undo commands for reversible operations
 
-## 🌟 **Core Features**
+## Core Features
 
-### **🧠 Natural Language Processing**
+### Natural Language Processing
 Transform plain English into safe, executable terminal commands:
 
 ```bash
@@ -50,24 +51,24 @@ natural "organize my downloads folder by file type"
 natural "backup and clean up old log files"
 ```
 
-### **🔒 Three-Tier Security System**
-- **🟢 Safe Commands**: Execute immediately (ls, pwd, cat, grep, etc.)
-- **🟡 Dangerous Commands**: Require confirmation (rm, sudo, chmod, etc.)
-- **🔴 Forbidden Commands**: Blocked entirely (rm -rf /, format c:, etc.)
+### Three-Tier Security System
+- **Safe Commands**: Execute immediately (ls, pwd, cat, grep, etc.)
+- **Dangerous Commands**: Require confirmation (rm, sudo, chmod, etc.)
+- **Forbidden Commands**: Blocked entirely (rm -rf /, format c:, etc.)
 
-### **💾 Session Memory & Context**
+### Session Memory & Context
 - **Persistent Sessions**: Remember conversation history and context
 - **Command History**: Track successful and failed operations
 - **File Awareness**: Understand your project structure and recent changes
 - **Context Building**: Use previous commands to inform new suggestions
 
-### **🎨 Rich Terminal Experience**
+### Rich Terminal Experience
 - **Beautiful Interface**: Rich formatting with colors, panels, and progress bars
 - **Interactive Confirmations**: Clear safety prompts with detailed explanations
 - **Real-time Feedback**: Live progress updates and execution summaries
 - **Command Analysis**: Safety assessment before execution
 
-## 🏗️ **Architecture**
+## Architecture
 
 ```
 User Input → CLI Client → A2A Server → Planning Layer → MCP Client → MCP Server
@@ -77,21 +78,21 @@ User Input → CLI Client → A2A Server → Planning Layer → MCP Client → M
             Mode                       & Execution
 ```
 
-### **Components:**
+### Components:
 - **CLI Client**: Rich terminal interface with natural language support
 - **A2A Server**: OpenAI integration with planning capabilities
 - **Planning Layer**: Multi-step task decomposition and execution coordination
 - **MCP Client**: Protocol communication and session management
 - **MCP Server**: Secure command execution with safety classification
 
-## 🚀 **Quick Start**
+## Quick Start
 
-### **Prerequisites**
+### Prerequisites
 - Python 3.11+
 - OpenAI API key
 - uv package manager (recommended) or pip
 
-### **Installation**
+### Installation
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -106,7 +107,7 @@ cp env.example .env
 # Edit .env and add your OpenAI API key
 ```
 
-### **Usage**
+### Usage
 ```bash
 # Start interactive session
 uv run python -m cli.terminal_client interactive
@@ -121,9 +122,9 @@ uv run python -m cli.terminal_client natural "show me all Python files"
 uv run python -m cli.terminal_client plan "setup a new project"
 ```
 
-## 📚 **Available Commands**
+## Available Commands
 
-### **Planning Commands (New in Phase 4B)**
+### Planning Commands (New in Phase 4B)
 - `plan "complex task"` - Force multi-step planning mode
 - `plans` - View all active execution plans
 - `plan-status <plan_id>` - Check detailed plan status
@@ -131,20 +132,20 @@ uv run python -m cli.terminal_client plan "setup a new project"
 - `rollback-plan <plan_id>` - Rollback failed operations
 - `toggle-planning` - Enable/disable automatic planning
 
-### **Natural Language Commands**
+### Natural Language Commands
 - `natural "your request"` - Process natural language with AI
 - `session-info` - View current AI context and memory
 - `toggle-mode` - Switch between direct/natural language modes
 
-### **Direct Commands**
+### Direct Commands
 - `help` - Show all available commands
 - `history` - View command history
 - `analyze <command>` - Check command safety without executing
 - `exit` - Exit the terminal
 
-## 🧪 **Testing**
+## Testing
 
-### **Run Phase 4B Tests**
+### Run Phase 4B Tests
 ```bash
 # Comprehensive planning layer tests
 uv run python scripts/test_phase_4b.py
@@ -153,16 +154,16 @@ uv run python scripts/test_phase_4b.py
 uv run python scripts/test_phase_4a.py
 ```
 
-### **Test Coverage**
+### Test Coverage
 - **Phase 4B**: 100% success rate (12/12 tests)
 - **Phase 4A**: 100% success rate (10/10 tests)
-- **Planning Components**: Dependency management, progress tracking, rollback
-- **AI Integration**: Plan generation, execution coordination
+- **Planning Components**: Dependency management, progress tracking, rollback, persistence
+- **AI Integration**: Plan generation, execution coordination, dependency resolution
 - **Error Handling**: Graceful degradation and recovery
 
-## 🔧 **Configuration**
+## Configuration
 
-### **Environment Variables**
+### Environment Variables
 ```bash
 # OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key_here
@@ -176,18 +177,18 @@ LOG_FILE=logs/app.log
 MEMORY_FILE_PATH=data/session_memory.json
 ```
 
-## 📈 **Project Phases**
+## Project Phases
 
-- ✅ **Phase 1**: Project Foundation (Python environment, dependencies)
-- ✅ **Phase 2**: MCP Server (secure command execution)
-- ✅ **Phase 3**: CLI Client (interactive terminal interface)
-- ✅ **Phase 4A**: A2A Foundation (natural language processing)
-- ✅ **Phase 4B**: Planning Layer (multi-step task decomposition)
-- 🔄 **Phase 4C**: Advanced Features (parallel execution, advanced planning)
+- Phase 1: Project Foundation (Python environment, dependencies) - COMPLETE
+- Phase 2: MCP Server (secure command execution) - COMPLETE
+- Phase 3: CLI Client (interactive terminal interface) - COMPLETE
+- Phase 4A: A2A Foundation (natural language processing) - COMPLETE
+- Phase 4B: Planning Layer (multi-step task decomposition) - COMPLETE
+- Phase 4C: Advanced Features (parallel execution, advanced planning) - IN PROGRESS
 
-## 🎯 **Example Multi-Step Operations**
+## Example Multi-Step Operations
 
-### **Project Setup**
+### Project Setup
 ```bash
 plan "create a new Python web application with Flask"
 ```
@@ -199,7 +200,7 @@ plan "create a new Python web application with Flask"
 5. Initialize git repository
 6. Create requirements.txt
 
-### **System Maintenance**
+### System Maintenance
 ```bash
 plan "backup important files and clean up disk space"
 ```
@@ -211,7 +212,7 @@ plan "backup important files and clean up disk space"
 5. Empty trash/recycle bin
 6. Generate cleanup report
 
-### **Development Workflow**
+### Development Workflow
 ```bash
 plan "deploy my application to production"
 ```
@@ -224,21 +225,21 @@ plan "deploy my application to production"
 6. Restart application services
 7. Verify deployment health
 
-## 🛡️ **Security Features**
+## Security Features
 
-### **Command Classification**
+### Command Classification
 - **Real-time Analysis**: Every command analyzed before execution
 - **Context Awareness**: Considers current directory and recent actions
 - **User Confirmation**: Clear prompts for potentially dangerous operations
 - **Audit Trail**: Complete logging of all commands and decisions
 
-### **AI Safety**
+### AI Safety
 - **Prompt Engineering**: Carefully crafted prompts prioritize safety
 - **Command Validation**: AI suggestions validated against security rules
 - **Fallback Mechanisms**: Graceful degradation when AI is unavailable
 - **Rate Limiting**: Optimized API usage to prevent abuse
 
-## 🤝 **Contributing**
+## Contributing
 
 This is a portfolio project demonstrating modern software architecture and AI integration. The codebase showcases:
 
@@ -248,10 +249,10 @@ This is a portfolio project demonstrating modern software architecture and AI in
 - **Comprehensive Testing**: Automated test suites with high coverage
 - **Rich Documentation**: Detailed code comments and user guides
 
-## 📄 **License**
+## License
 
 This project is part of a summer portfolio demonstrating software engineering skills and modern development practices.
 
 ---
 
-**Built with ❤️ using Python, OpenAI GPT-4, Rich, and modern async programming** 
+**Built with Python, OpenAI GPT-4, Rich, and modern async programming** 
