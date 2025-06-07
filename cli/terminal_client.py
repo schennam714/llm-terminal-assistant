@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""
-Enhanced Terminal Client - Phase 4B Implementation
-Interactive terminal interface with natural language processing and multi-step planning
-"""
+
 
 import asyncio
 import json

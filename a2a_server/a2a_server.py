@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""
-A2A (Agent-to-Agent) Server - Phase 4B Implementation
-Handles natural language processing, command translation, and multi-step planning using OpenAI
-"""
-
 import os
 import sys
 import asyncio

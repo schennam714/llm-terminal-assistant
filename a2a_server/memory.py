@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Memory system for A2A server - handles session context and conversation history
-"""
+
 
 import json
 import os

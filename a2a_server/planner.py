@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-Planning Layer for A2A Server - Phase 4B Implementation
-Handles multi-step command planning, task decomposition, and execution coordination
-"""
 
 import asyncio
 import logging
@@ -30,7 +26,6 @@ class StepStatus(Enum):
     SKIPPED = "skipped"
 
 class PlanStep:
-    """Individual step in an execution plan"""
     
     def __init__(self, step_id: str, command: str, description: str, 
                  dependencies: List[str] = None, rollback_command: str = None):
@@ -192,9 +187,21 @@ class TaskPlanner:
                     # Convert step index to step ID
                     dep_index = int(dep)
                     actual_dependencies.append(f"{plan_id}_step_{dep_index + 1}")
-                else:
-                    # Already a step ID, keep as is
+                elif dep.startswith(plan_id):
+                    # Already a proper step ID, keep as is
                     actual_dependencies.append(dep)
+                else:
+                    # Convert command text to step ID by finding matching command
+                    found_match = False
+                    for j, prev_step in enumerate(steps_data[:i]):  # Only look at previous steps
+                        if prev_step.get('command', '') == dep:
+                            actual_dependencies.append(f"{plan_id}_step_{j + 1}")
+                            found_match = True
+                            break
+                    
+                    if not found_match:
+                        logger.warning(f"Could not resolve dependency '{dep}' for step {i+1}, skipping")
+                        # Skip unresolvable dependencies rather than keeping invalid ones
             
             step = PlanStep(
                 step_id=f"{plan_id}_step_{i+1}",
@@ -224,22 +231,26 @@ TASK: Create a step-by-step execution plan for the given user intent.
 
 GUIDELINES:
 1. Break complex tasks into logical, sequential steps
-2. Identify dependencies between steps
+2. Identify dependencies between steps using STEP NUMBERS (0, 1, 2...) or EXACT COMMAND TEXT
 3. Consider safety and provide rollback commands where appropriate
 4. Use appropriate terminal commands for the current platform
 5. Provide clear descriptions for each step
+6. CRITICAL: Ensure all shell commands are syntactically correct and properly quoted
+7. For Python scripts, use proper if __name__ == "__main__": syntax
+8. Test command syntax mentally before including in plan
+9. Keep commands reasonably short - split very long operations into multiple steps
 
 RESPONSE FORMAT (return as JSON):
 {
     "description": "Brief description of the overall plan",
     "requires_confirmation": true/false,
     "confirmation_message": "Message if confirmation needed",
-    "steps": [
+            "steps": [
         {
             "command": "terminal command to execute",
-            "description": "What this step does",
-            "dependencies": ["step_ids that must complete first"],
-            "rollback_command": "command to undo this step (if applicable)"
+            "description": "What this step does", 
+            "dependencies": ["0", "1"] // Use step numbers (0=first step) or exact command text,
+            "rollback_command": "command to undo this step (if applicable - avoid 'cd -', use explicit paths)"
         }
     ]
 }
@@ -262,7 +273,7 @@ CURRENT CONTEXT:"""
         
         try:
             response = await self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",  # Using the working model
+                model="gpt-4o",  
                 messages=[
                     {"role": "system", "content": full_prompt},
                     {"role": "user", "content": f"Create an execution plan for: {user_intent}. Please respond with JSON format."}
@@ -441,6 +452,7 @@ class PlanExecutor:
         self.mcp_client = mcp_client
         self.memory = memory_system
         self.task_planner = task_planner
+        self.current_working_directory = None  # Track working directory across steps
         
     async def execute_plan(self, plan: ExecutionPlan, force_execute: bool = False) -> Dict[str, Any]:
         """Execute a multi-step plan"""
@@ -456,6 +468,10 @@ class PlanExecutor:
         
         plan.status = PlanStatus.IN_PROGRESS
         plan.start_time = datetime.now()
+        
+        # Initialize working directory for this plan
+        import os
+        self.current_working_directory = os.getcwd()
         
         try:
             while not plan.is_complete() and not plan.has_failed_steps():
@@ -508,13 +524,21 @@ class PlanExecutor:
     async def _execute_step(self, step: PlanStep):
         """Execute a single plan step"""
         logger.info(f"Executing step {step.step_id}: {step.command}")
+        logger.info(f"Working directory: {self.current_working_directory}")
         
         step.status = StepStatus.RUNNING
         step.start_time = datetime.now()
         
         try:
-            # Execute command through MCP client
-            result = await self.mcp_client.execute_command(step.command, force_execute=True)
+            # Basic command syntax validation
+            if not self._validate_command_syntax(step.command):
+                step.status = StepStatus.FAILED
+                step.error = "Command failed syntax validation"
+                logger.error(f"Step {step.step_id} failed syntax validation: {step.command}")
+                return
+            
+            # Execute command with working directory context
+            result = await self._execute_command_with_context(step.command)
             
             step.output = result.get('stdout', '')
             step.error = result.get('stderr', '')
@@ -550,11 +574,101 @@ class PlanExecutor:
         
         step.end_time = datetime.now()
     
+    def _validate_command_syntax(self, command: str) -> bool:
+        """Basic command syntax validation"""
+        if not command or not command.strip():
+            return False
+        
+        # Check for common syntax errors
+        command = command.strip()
+        
+        # Check for unmatched quotes
+        if command.count('"') % 2 != 0 or command.count("'") % 2 != 0:
+            logger.warning(f"Unmatched quotes in command: {command}")
+            return False
+        
+        # Check for dangerous patterns that might be syntax errors
+        dangerous_patterns = [
+            '":"',  # Malformed Python syntax like "__main__":
+            '" >> ',  # Unclosed quotes before redirection
+            "' >> ",  # Similar with single quotes
+        ]
+        
+        for pattern in dangerous_patterns:
+            if pattern in command:
+                logger.warning(f"Potentially malformed syntax pattern '{pattern}' in command: {command}")
+                return False
+        
+        return True
+    
+    async def _execute_command_with_context(self, command: str) -> Dict[str, Any]:
+        """Execute command with preserved working directory context"""
+        import os
+        import subprocess
+        
+        try:
+            # Temporarily change to the tracked working directory
+            original_cwd = os.getcwd()
+            if self.current_working_directory and os.path.exists(self.current_working_directory):
+                os.chdir(self.current_working_directory)
+            
+            # Execute command using MCP client
+            result = await self.mcp_client.execute_command(command, force_execute=True)
+            
+            # Update working directory if command was a cd
+            if result.get('success') and command.strip().startswith('cd '):
+                # Parse the target directory from cd command
+                parts = command.strip().split()
+                if len(parts) >= 2:
+                    target_dir = ' '.join(parts[1:])  # Handle spaces in directory names
+                    
+                    # Resolve the new working directory
+                    if target_dir == '..':
+                        self.current_working_directory = os.path.dirname(self.current_working_directory)
+                    elif target_dir.startswith('/'):
+                        # Absolute path
+                        self.current_working_directory = target_dir
+                    else:
+                        # Relative path
+                        self.current_working_directory = os.path.join(self.current_working_directory, target_dir)
+                    
+                    # Normalize the path
+                    self.current_working_directory = os.path.abspath(self.current_working_directory)
+                    
+                    # Update memory with new directory
+                    self.memory.update_current_directory(self.current_working_directory)
+            
+            # Restore original working directory
+            os.chdir(original_cwd)
+            
+            return result
+            
+        except Exception as e:
+            # Restore original working directory on error
+            try:
+                os.chdir(original_cwd)
+            except:
+                pass
+            
+            return {
+                'success': False,
+                'stdout': '',
+                'stderr': f"Context execution error: {str(e)}",
+                'metadata': {}
+            }
+    
     async def rollback_plan(self, plan: ExecutionPlan) -> Dict[str, Any]:
         """Attempt to rollback a failed plan"""
         logger.info(f"Rolling back plan {plan.plan_id}")
         
         rollback_results = []
+        
+        # Initialize working directory for rollback - start from the final state
+        import os
+        if hasattr(self, 'current_working_directory') and self.current_working_directory:
+            rollback_working_dir = self.current_working_directory
+        else:
+            rollback_working_dir = os.getcwd()
         
         # Execute rollback commands in reverse order
         completed_steps = [s for s in reversed(plan.steps) if s.status == StepStatus.COMPLETED and s.rollback_command]
@@ -562,7 +676,20 @@ class PlanExecutor:
         for step in completed_steps:
             try:
                 logger.info(f"Rolling back step {step.step_id}: {step.rollback_command}")
-                result = await self.mcp_client.execute_command(step.rollback_command, force_execute=True)
+                logger.info(f"Rollback working directory: {rollback_working_dir}")
+                
+                # Save current context, set rollback context, execute, restore
+                original_working_dir = self.current_working_directory
+                self.current_working_directory = rollback_working_dir
+                
+                result = await self._execute_command_with_context(step.rollback_command)
+                
+                # Update rollback working directory if it was a cd command
+                if result.get('success') and step.rollback_command.strip().startswith('cd '):
+                    rollback_working_dir = self.current_working_directory
+                
+                # Restore original context
+                self.current_working_directory = original_working_dir
                 
                 rollback_results.append({
                     "step_id": step.step_id,

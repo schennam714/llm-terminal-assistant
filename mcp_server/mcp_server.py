@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 # Create an MCP server using FastMCP
 mcp = FastMCP("CrossPlatformTerminal")
 
-class CommandClassifier:
-    """Classifies commands by risk level for appropriate handling"""
-    
+class CommandClassifier:    
     def __init__(self):
         self.os_type = platform.system().lower()
         
@@ -263,16 +261,6 @@ platform_adapter = PlatformAdapter()
 
 @mcp.tool()
 def execute_terminal_command(command: str, force_execute: bool = False) -> str:
-    """
-    Execute a terminal command with intelligent risk assessment.
-    
-    Args:
-        command: The terminal command to execute
-        force_execute: Skip confirmation for dangerous commands (used by CLI)
-        
-    Returns:
-        The command output, error message, or confirmation request
-    """
     logger.info(f"Received command execution request: {command}")
     
     success, stdout, stderr, metadata = platform_adapter.execute_command(command, force_execute)
@@ -304,15 +292,7 @@ def execute_terminal_command(command: str, force_execute: bool = False) -> str:
 
 @mcp.tool()
 def analyze_command_safety(command: str) -> str:
-    """
-    Analyze a command's safety without executing it.
-    
-    Args:
-        command: The command to analyze
-        
-    Returns:
-        Safety analysis and recommendations
-    """
+
     risk_level, reason, suggestions = platform_adapter.classifier.classify_command(command)
     adapted = platform_adapter.adapt_command(command)
     
@@ -339,12 +319,6 @@ def analyze_command_safety(command: str) -> str:
 
 @mcp.tool()
 def get_system_info() -> str:
-    """
-    Get comprehensive system information using psutil and platform modules.
-    
-    Returns:
-        Detailed system information including OS, hardware, and current state
-    """
     try:
         # Get CPU information (non-blocking)
         cpu_count = psutil.cpu_count()
@@ -388,12 +362,6 @@ def get_system_info() -> str:
 
 @mcp.tool()
 def list_allowed_commands() -> str:
-    """
-    List all allowed commands and security configuration for this system.
-    
-    Returns:
-        Security configuration including allowed and blocked commands
-    """
     allowed = platform_adapter.classifier.safe_commands
     dangerous = platform_adapter.classifier.dangerous_commands
     
