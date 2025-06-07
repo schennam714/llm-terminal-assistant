@@ -253,6 +253,42 @@
         "echo 'def add(x, y):\\n    return x + y\\n\\ndef subtract(x, y):\\n    return x - y\\n\\ndef multiply(x, y):\\n    return x * y\\n\\ndef divide(x, y):\\n    if y != 0:\\n        return x / y\\n    else:\\n        return \"Cannot divide by zero\"\\n\\nif __name__ == \"__main__\":\\n    print(\"Select operation:\")\\n    print(\"1.Add\")\\n    print(\"2.Subtract\")\\n    print(\"3.Multiply\")\\n    print(\"4.Divide\")\\n\\n    choice = input(\"Enter choice(1/2/3/4): \")\\n\\n    num1 = float(input(\"Enter first number: \"))\\n    num2 = float(input(\"Enter second number: \"))\\n\\n    if choice == \"1\":\\n        print(f\"{num1} + {num2} = {add(num1, num2)}\")\\n    elif choice == \"2\":\\n        print(f\"{num1} - {num2} = {subtract(num1, num2)}\")\\n    elif choice == \"3\":\\n        print(f\"{num1} * {num2} = {multiply(num1, num2)}\")\\n    elif choice == \"4\":\\n        print(f\"{num1} / {num2} = {divide(num1, num2)}\")\\n    else:\\n        print(\"Invalid input\")' > sample_calculator.py"
       ],
       "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-07T15:36:36.821788",
+      "user_input": "list my directory",
+      "ai_response": "This command will list all files and directories in the current working directory.",
+      "commands_executed": [
+        "ls"
+      ],
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-07T15:37:24.657877",
+      "user_input": "list my directory",
+      "ai_response": "This command will list all files and directories in the current working directory.",
+      "commands_executed": [
+        "ls"
+      ],
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-07T15:45:11.797014",
+      "user_input": "list python files in my directory",
+      "ai_response": "This command lists all files in the current directory with a .py extension, which are typically Python files.",
+      "commands_executed": [
+        "ls *.py"
+      ],
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-07T15:45:46.300455",
+      "user_input": "list my current directory",
+      "ai_response": "This command will list all files and directories in the current working directory.",
+      "commands_executed": [
+        "ls"
+      ],
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
     }
   ],
   "command_history": [
@@ -767,12 +803,48 @@
       "output": "",
       "natural_language_intent": "Create a sample Python calculator script in the current directory.",
       "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-07T15:36:36.820007",
+      "command": "ls",
+      "success": true,
+      "output": "CHANGELOG.md\nREADME.md\na2a_server\ncli\ndata\nenv.example\nlogs\nmcp_server\nrequirements.txt\nscripts\ntest_readline_history.py\nuv.lock\nvenv",
+      "natural_language_intent": "",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-07T15:37:24.655725",
+      "command": "ls",
+      "success": true,
+      "output": "CHANGELOG.md\nREADME.md\na2a_server\ncli\ndata\nenv.example\nlogs\nmcp_server\nrequirements.txt\nscripts\ntest_readline_history.py\nuv.lock\nvenv",
+      "natural_language_intent": "",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-07T15:45:11.793881",
+      "command": "ls *.py",
+      "success": false,
+      "output": "ls: *.py: No such file or directory",
+      "natural_language_intent": "",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
+    },
+    {
+      "timestamp": "2025-06-07T15:45:46.298247",
+      "command": "ls",
+      "success": true,
+      "output": "CHANGELOG.md\nREADME.md\na2a_server\ncli\ndata\nenv.example\nlogs\nmcp_server\nrequirements.txt\nscripts\nuv.lock\nvenv",
+      "natural_language_intent": "",
+      "working_directory": "/Users/shreyaschennamaraja/Desktop/llm-terminal-assistant"
     }
   ],
   "context": {},
   "user_preferences": {},
   "last_files_mentioned": [
-    "Users/shreyaschennamaraja"
+    "CHANGELOG.md",
+    "README.md",
+    "env.example",
+    "requirements.txt",
+    "uv.lock"
   ],
   "active_project": null
 }

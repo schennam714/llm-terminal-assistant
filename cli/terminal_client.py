@@ -5,6 +5,8 @@ import asyncio
 import json
 import sys
 import os
+import readline
+import atexit
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 
@@ -46,6 +48,101 @@ class EnhancedTerminalClient:
         self.natural_language_mode = False
         self.planning_enabled = True
         self.session_active = True
+        
+        # Setup readline for command history
+        self.history_file = os.path.expanduser('~/.llm_terminal_history')
+        self._setup_readline()
+    
+    def _setup_readline(self):
+        """Setup readline for command history and auto-completion"""
+        try:
+            # Configure readline
+            readline.set_history_length(1000)  # Keep last 1000 commands
+            
+            # Load existing history if it exists
+            if os.path.exists(self.history_file):
+                readline.read_history_file(self.history_file)
+            
+            # Save history on exit
+            atexit.register(self._save_history)
+            
+            # Set up basic auto-completion for common commands
+            self._setup_command_completion()
+            
+            # Enable tab completion and configure readline behavior
+            readline.parse_and_bind('tab: complete')
+            readline.parse_and_bind('set editing-mode emacs')  # Use emacs-style editing
+            readline.parse_and_bind('set colored-stats off')   # Disable colored completion
+            readline.parse_and_bind('set show-all-if-ambiguous on')  # Show completions immediately
+            
+        except ImportError:
+            # readline not available (e.g., on Windows without pyreadline)
+            self.console.print("⚠️  Command history not available (readline not found)", style="yellow")
+        except Exception as e:
+            self.console.print(f"⚠️  Failed to setup command history: {e}", style="yellow")
+    
+    def _setup_command_completion(self):
+        """Setup auto-completion for terminal commands"""
+        def complete_command(text, state):
+            commands = [
+                'help', 'exit', 'quit', 'history', 'session-info', 'toggle-mode',
+                'toggle-planning', 'clear', 'plans', 'plan "', 'natural "',
+                'plan-status ', 'cancel-plan ', 'rollback-plan ', 'analyze '
+            ]
+            
+            matches = [cmd for cmd in commands if cmd.startswith(text)]
+            
+            if state < len(matches):
+                return matches[state]
+            return None
+        
+        try:
+            readline.set_completer(complete_command)
+        except Exception:
+            pass  # Silently fail if completion setup fails
+    
+    def _reset_terminal_state(self):
+        """Reset terminal state to clean condition for readline"""
+        try:
+            # Send escape sequence to reset cursor and clear any partial lines
+            sys.stdout.write('\033[0m')  # Reset all attributes
+            sys.stdout.write('\r')       # Move cursor to beginning of line
+            sys.stdout.flush()
+        except Exception:
+            pass
+    
+    def _save_history(self):
+        """Save command history to file"""
+        try:
+            readline.write_history_file(self.history_file)
+        except Exception:
+            pass  # Silently fail if we can't save history
+    
+    def readline_prompt(self, prompt_text: str) -> str:
+        """Get user input with readline support for history and editing"""
+        try:
+            # Ensure all Rich output is completely flushed before readline
+            self.console.file.flush()
+            sys.stdout.flush()
+            sys.stderr.flush()
+            
+            # Reset terminal state to clean condition
+            self._reset_terminal_state()
+            
+            # Small delay to ensure terminal state is stable
+            import time
+            time.sleep(0.01)
+            
+            # Use input() which integrates with readline when available
+            user_input = input(prompt_text)
+            
+            # Add the command to readline history explicitly
+            if user_input.strip():
+                readline.add_history(user_input)
+            
+            return user_input
+        except (EOFError, KeyboardInterrupt):
+            return ""
         
     async def initialize(self):
         """Initialize MCP client and A2A server"""
@@ -92,6 +189,8 @@ class EnhancedTerminalClient:
 - `toggle-mode` - Switch between direct and natural language modes
 - `help` - Show all commands
 - `exit` - Exit the terminal
+
+**💡 Pro Tip:** Use ↑/↓ arrow keys to navigate command history!
 
 **Planning Mode:** {'🟢 Enabled' if self.planning_enabled else '🔴 Disabled'}
 **Natural Language Mode:** {'🟢 Active' if self.natural_language_mode else '🔴 Inactive'}
@@ -417,13 +516,17 @@ analyze "sudo rm -rf /"   # Analysis only - no execution
         
         while True:
             try:
-                # Dynamic prompt based on mode
+                # Dynamic prompt based on mode with readline support
                 if self.natural_language_mode:
-                    prompt_text = "\n[bold blue]🧠 AI Assistant[/bold blue]"
+                    prompt_text = "🧠 AI Assistant> "
                 else:
-                    prompt_text = "\n[bold blue]🤖 Terminal Assistant[/bold blue]"
+                    prompt_text = "🤖 Terminal Assistant> "
                 
-                command = Prompt.ask(prompt_text, default="").strip()
+                # Print a newline first to separate from previous output
+                print()
+                
+                # Use our readline-enabled prompt for command history support
+                command = self.readline_prompt(prompt_text).strip()
                 
                 if not command:
                     continue

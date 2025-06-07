@@ -1,8 +1,7 @@
-# LLM Terminal Assistant - Phase 4B Complete
+# LLM Terminal Assistant 
 
-An intelligent terminal assistant powered by OpenAI's GPT models, featuring **multi-step planning**, natural language processing, and comprehensive security. This project demonstrates modern software architecture with A2A (Agent-to-Agent) protocol integration and MCP (Model Context Protocol) compliance.
+An intelligent terminal assistant powered by OpenAI's GPT models, featuring **multi-step planning**, natural language processing, and comprehensive security. Uses A2A (Agent-to-Agent) protocol integration and MCP (Model Context Protocol) compliance.
 
-## Phase 4B: Planning Layer - COMPLETE
 
 ### Multi-Step Planning Engine
 - **AI-Powered Task Decomposition**: Complex tasks automatically broken into sequential steps
@@ -62,11 +61,6 @@ natural "backup and clean up old log files"
 - **File Awareness**: Understand your project structure and recent changes
 - **Context Building**: Use previous commands to inform new suggestions
 
-### Rich Terminal Experience
-- **Beautiful Interface**: Rich formatting with colors, panels, and progress bars
-- **Interactive Confirmations**: Clear safety prompts with detailed explanations
-- **Real-time Feedback**: Live progress updates and execution summaries
-- **Command Analysis**: Safety assessment before execution
 
 ## Architecture
 
@@ -79,7 +73,7 @@ User Input → CLI Client → A2A Server → Planning Layer → MCP Client → M
 ```
 
 ### Components:
-- **CLI Client**: Rich terminal interface with natural language support
+- **CLI Client**: Rich terminal interface with natural language support and readline history
 - **A2A Server**: OpenAI integration with planning capabilities
 - **Planning Layer**: Multi-step task decomposition and execution coordination
 - **MCP Client**: Protocol communication and session management
@@ -109,7 +103,7 @@ cp env.example .env
 
 ### Usage
 ```bash
-# Start interactive session
+# Start interactive session with full readline support
 uv run python -m cli.terminal_client interactive
 
 # Execute single commands
@@ -122,9 +116,15 @@ uv run python -m cli.terminal_client natural "show me all Python files"
 uv run python -m cli.terminal_client plan "setup a new project"
 ```
 
+**Tips:**
+- Use ↑/↓ arrow keys to navigate command history
+- Tab completion works for common commands
+- Commands persist across sessions in `~/.llm_terminal_history`
+- Use Ctrl+A/E for line beginning/end, Ctrl+K to kill line
+
 ## Available Commands
 
-### Planning Commands (New in Phase 4B)
+### Planning Commands 
 - `plan "complex task"` - Force multi-step planning mode
 - `plans` - View all active execution plans
 - `plan-status <plan_id>` - Check detailed plan status
@@ -143,23 +143,11 @@ uv run python -m cli.terminal_client plan "setup a new project"
 - `analyze <command>` - Check command safety without executing
 - `exit` - Exit the terminal
 
-## Testing
-
-### Run Phase 4B Tests
-```bash
-# Comprehensive planning layer tests
-uv run python scripts/test_phase_4b.py
-
-# Previous phase tests
-uv run python scripts/test_phase_4a.py
-```
-
-### Test Coverage
-- **Phase 4B**: 100% success rate (12/12 tests)
-- **Phase 4A**: 100% success rate (10/10 tests)
-- **Planning Components**: Dependency management, progress tracking, rollback, persistence
-- **AI Integration**: Plan generation, execution coordination, dependency resolution
-- **Error Handling**: Graceful degradation and recovery
+### Terminal Features
+- **↑/↓ Arrow Keys**: Navigate command history (across sessions)
+- **Tab Completion**: Auto-complete commands and paths
+- **Emacs-style Editing**: Ctrl+A (beginning), Ctrl+E (end), Ctrl+K (kill line), etc.
+- **History File**: Commands saved to `~/.llm_terminal_history` (last 1000 commands)
 
 ## Configuration
 
@@ -176,82 +164,6 @@ LOG_LEVEL=INFO
 LOG_FILE=logs/app.log
 MEMORY_FILE_PATH=data/session_memory.json
 ```
-
-## Project Phases
-
-- Phase 1: Project Foundation (Python environment, dependencies) - COMPLETE
-- Phase 2: MCP Server (secure command execution) - COMPLETE
-- Phase 3: CLI Client (interactive terminal interface) - COMPLETE
-- Phase 4A: A2A Foundation (natural language processing) - COMPLETE
-- Phase 4B: Planning Layer (multi-step task decomposition) - COMPLETE
-- Phase 4C: Advanced Features (parallel execution, advanced planning) - IN PROGRESS
-
-## Example Multi-Step Operations
-
-### Project Setup
-```bash
-plan "create a new Python web application with Flask"
-```
-**Generated Plan:**
-1. Create project directory
-2. Initialize virtual environment
-3. Install Flask and dependencies
-4. Create basic app structure
-5. Initialize git repository
-6. Create requirements.txt
-
-### System Maintenance
-```bash
-plan "backup important files and clean up disk space"
-```
-**Generated Plan:**
-1. Create backup directory with timestamp
-2. Copy important documents to backup
-3. Find and list large files
-4. Clean temporary files
-5. Empty trash/recycle bin
-6. Generate cleanup report
-
-### Development Workflow
-```bash
-plan "deploy my application to production"
-```
-**Generated Plan:**
-1. Run tests and ensure they pass
-2. Build production assets
-3. Create deployment package
-4. Upload to production server
-5. Run database migrations
-6. Restart application services
-7. Verify deployment health
-
-## Security Features
-
-### Command Classification
-- **Real-time Analysis**: Every command analyzed before execution
-- **Context Awareness**: Considers current directory and recent actions
-- **User Confirmation**: Clear prompts for potentially dangerous operations
-- **Audit Trail**: Complete logging of all commands and decisions
-
-### AI Safety
-- **Prompt Engineering**: Carefully crafted prompts prioritize safety
-- **Command Validation**: AI suggestions validated against security rules
-- **Fallback Mechanisms**: Graceful degradation when AI is unavailable
-- **Rate Limiting**: Optimized API usage to prevent abuse
-
-## Contributing
-
-This is a portfolio project demonstrating modern software architecture and AI integration. The codebase showcases:
-
-- **Clean Architecture**: Modular design with clear separation of concerns
-- **Type Safety**: Full type hints throughout the codebase
-- **Async Programming**: Modern async/await patterns
-- **Comprehensive Testing**: Automated test suites with high coverage
-- **Rich Documentation**: Detailed code comments and user guides
-
-## License
-
-This project is part of a summer portfolio demonstrating software engineering skills and modern development practices.
 
 ---
 
